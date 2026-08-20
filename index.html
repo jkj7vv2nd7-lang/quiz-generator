@@ -1,0 +1,1376 @@
+<!doctype html>
+<html lang="ja">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="color-scheme" content="light">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Manrope:wght@500;600;700;800&family=Noto+Sans+JP:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <title>QuizCraft EDU Pro 3.1｜Gemini個人API対応</title>
+  <style>
+    :root{
+      --chalk:#173f3a;
+      --chalk-deep:#0f2f2b;
+      --chalk-soft:#24534d;
+      --paper:#fbfaf5;
+      --paper-2:#f1efe5;
+      --ink:#17201f;
+      --muted:#65716e;
+      --line:#d9ddd5;
+      --red:#c7463c;
+      --red-soft:#f9e8e5;
+      --yellow:#f3c955;
+      --yellow-soft:#fff5ce;
+      --blue:#2c6f91;
+      --blue-soft:#e6f2f7;
+      --green:#2e7d61;
+      --green-soft:#e5f4ed;
+      --white:#ffffff;
+      --shadow:0 1px 2px rgba(15,47,43,.06),0 12px 32px -18px rgba(15,47,43,.34);
+      --radius:18px;
+      --radius-sm:11px;
+      --sidebar:248px;
+      --topbar:72px;
+      --step-0:clamp(.95rem,.9rem + .2vw,1.05rem);
+      --step-1:clamp(1.15rem,1.05rem + .45vw,1.4rem);
+      --step-2:clamp(1.45rem,1.25rem + .9vw,2rem);
+      --step-3:clamp(2rem,1.55rem + 2vw,3.2rem);
+    }
+    *{box-sizing:border-box}
+    html{scroll-behavior:smooth}
+    body{margin:0;background:var(--paper-2);color:var(--ink);font-family:"BIZ UDPGothic","Yu Gothic UI","Hiragino Sans","Noto Sans JP",sans-serif;font-size:var(--step-0);line-height:1.75;overflow-wrap:anywhere}
+    button,input,textarea,select{font:inherit}
+    button{cursor:pointer}
+    button:disabled{cursor:not-allowed;opacity:.52}
+    :focus-visible{outline:3px solid rgba(243,201,85,.9);outline-offset:3px}
+    .app{min-height:100vh;display:grid;grid-template-columns:var(--sidebar) minmax(0,1fr)}
+    .sidebar{position:fixed;inset:0 auto 0 0;width:var(--sidebar);background:linear-gradient(180deg,var(--chalk-deep),var(--chalk));color:#eef7f3;padding:22px 16px;display:flex;flex-direction:column;z-index:20;box-shadow:8px 0 28px rgba(15,47,43,.14)}
+    .brand{display:flex;gap:12px;align-items:center;padding:4px 8px 22px;border-bottom:1px solid rgba(255,255,255,.13)}
+    .brand-mark{width:46px;height:46px;border-radius:14px;background:var(--yellow);color:var(--chalk-deep);display:grid;place-items:center;font-weight:900;font-size:1.35rem;box-shadow:inset 0 -3px 0 rgba(0,0,0,.12);transform:rotate(-2deg)}
+    .brand-title{font-weight:900;letter-spacing:.03em;font-size:1.18rem;line-height:1.2}
+    .brand-sub{font-size:.74rem;color:#bcd1ca;margin-top:3px}
+    .nav{display:grid;gap:5px;margin-top:20px}
+    .nav-btn{border:0;background:transparent;color:#cfe0db;padding:11px 12px;border-radius:12px;display:flex;align-items:center;gap:11px;text-align:left;font-weight:700;transition:.18s ease}
+    .nav-btn:hover{background:rgba(255,255,255,.08);color:#fff}
+    .nav-btn.active{background:#fff;color:var(--chalk-deep);box-shadow:var(--shadow)}
+    .nav-icon{width:24px;text-align:center;font-size:1.05rem}
+    .sidebar-foot{margin-top:auto;padding:14px 10px 3px;color:#bcd1ca;font-size:.72rem;line-height:1.55}
+    .main{grid-column:2;min-width:0}
+    .topbar{height:var(--topbar);position:sticky;top:0;z-index:15;background:rgba(251,250,245,.91);backdrop-filter:blur(14px);border-bottom:1px solid rgba(23,32,31,.08);display:flex;align-items:center;justify-content:space-between;padding:0 clamp(18px,3vw,42px)}
+    .page-kicker{font-size:.74rem;font-weight:800;color:var(--red);letter-spacing:.12em;text-transform:uppercase}
+    .top-title{font-size:1.12rem;font-weight:900;line-height:1.2}
+    .top-actions{display:flex;align-items:center;gap:10px}
+    .autosave{font-size:.74rem;color:var(--muted);display:flex;align-items:center;gap:6px}
+    .autosave-dot{width:8px;height:8px;border-radius:50%;background:var(--green)}
+    .mobile-menu{display:none;border:0;background:var(--chalk);color:#fff;border-radius:10px;padding:8px 11px}
+    .content{max-width:1420px;margin:0 auto;padding:clamp(22px,3vw,44px)}
+    .page{display:none}
+    .page.active{display:block}
+    .hero{position:relative;overflow:hidden;background:linear-gradient(125deg,var(--chalk-deep),var(--chalk-soft));color:#fff;border-radius:26px;padding:clamp(26px,5vw,62px);box-shadow:var(--shadow);min-height:290px;display:grid;grid-template-columns:minmax(0,1.25fr) minmax(260px,.75fr);align-items:center;gap:30px}
+    .hero:before{content:"";position:absolute;right:-110px;top:-170px;width:420px;height:420px;border:58px solid rgba(255,255,255,.055);border-radius:50%}
+    .hero:after{content:"Q";position:absolute;right:8%;bottom:-78px;font-size:20rem;font-weight:900;line-height:1;color:rgba(255,255,255,.045);transform:rotate(-8deg)}
+    .hero-copy{position:relative;z-index:1}
+    .eyebrow{display:inline-flex;align-items:center;gap:8px;background:rgba(255,255,255,.1);border:1px solid rgba(255,255,255,.16);border-radius:999px;padding:5px 12px;font-size:.75rem;font-weight:800}
+    h1,h2,h3{font-feature-settings:"palt";letter-spacing:-.025em;line-height:1.28;margin:0}
+    .hero h1{font-size:var(--step-3);margin:16px 0 12px;max-width:15ch}
+    .hero p{color:#d7e6e1;max-width:56ch;margin:0 0 24px}
+    .hero-actions{display:flex;flex-wrap:wrap;gap:10px}
+    .hero-note{position:relative;z-index:1;background:var(--paper);color:var(--ink);border-radius:18px;padding:20px;transform:rotate(1.2deg);box-shadow:0 18px 45px rgba(0,0,0,.2)}
+    .hero-note:before{content:"";position:absolute;left:24px;right:24px;top:0;height:8px;background:repeating-linear-gradient(90deg,var(--red) 0 10px,transparent 10px 20px);opacity:.72}
+    .hero-note h3{font-size:1rem;margin:8px 0 13px}
+    .check-list{display:grid;gap:9px;font-size:.86rem}
+    .check-item{display:flex;gap:9px;align-items:flex-start}
+    .check-mark{color:var(--green);font-weight:900}
+    .section-head{display:flex;align-items:end;justify-content:space-between;gap:18px;margin:34px 0 16px}
+    .section-head h2{font-size:var(--step-2)}
+    .section-head p{margin:5px 0 0;color:var(--muted);font-size:.9rem}
+    .grid{display:grid;gap:16px}
+    .grid-4{grid-template-columns:repeat(4,minmax(0,1fr))}
+    .grid-3{grid-template-columns:repeat(3,minmax(0,1fr))}
+    .grid-2{grid-template-columns:repeat(2,minmax(0,1fr))}
+    .stat{background:var(--paper);border:1px solid var(--line);border-radius:var(--radius);padding:19px;box-shadow:var(--shadow);position:relative;overflow:hidden}
+    .stat:after{content:"";position:absolute;right:-15px;bottom:-21px;width:75px;height:75px;border-radius:50%;background:var(--tint,var(--green-soft))}
+    .stat-label{font-size:.78rem;color:var(--muted);font-weight:700}
+    .stat-value{font-size:2rem;font-weight:900;line-height:1.2;margin-top:6px;position:relative;z-index:1}
+    .stat-sub{font-size:.73rem;color:var(--muted);position:relative;z-index:1}
+    .card{background:var(--paper);border:1px solid var(--line);border-radius:var(--radius);padding:clamp(18px,2.3vw,28px);box-shadow:var(--shadow)}
+    .card-title{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:18px}
+    .card-title h2,.card-title h3{font-size:var(--step-1)}
+    .step-chip{display:inline-grid;place-items:center;min-width:31px;height:31px;border-radius:10px;background:var(--chalk);color:#fff;font-size:.8rem;font-weight:900;margin-right:9px}
+    .form-grid{display:grid;grid-template-columns:repeat(12,minmax(0,1fr));gap:14px}
+    .field{grid-column:span 6;display:grid;gap:6px}
+    .field.wide{grid-column:1/-1}
+    .field.third{grid-column:span 4}
+    .field.quarter{grid-column:span 3}
+    label,.label{font-size:.8rem;font-weight:800;color:#384441}
+    input[type="text"],input[type="url"],input[type="number"],textarea,select{width:100%;border:1px solid #cbd2cc;border-radius:10px;background:#fff;color:var(--ink);padding:10px 12px;transition:.16s ease}
+    textarea{resize:vertical;min-height:120px;line-height:1.65}
+    input:hover,textarea:hover,select:hover{border-color:#9caaa3}
+    input:focus,textarea:focus,select:focus{border-color:var(--chalk);box-shadow:0 0 0 3px rgba(36,83,77,.12);outline:0}
+    .source-text{min-height:330px;font-family:"BIZ UDPGothic","Yu Gothic UI",sans-serif}
+    .help{font-size:.73rem;color:var(--muted);line-height:1.55}
+    .btn{border:1px solid transparent;border-radius:11px;padding:9px 15px;font-weight:800;display:inline-flex;align-items:center;justify-content:center;gap:8px;transition:.16s ease;text-decoration:none;line-height:1.3}
+    .btn:hover{transform:translateY(-1px)}
+    .btn-primary{background:var(--red);color:#fff;box-shadow:0 7px 16px -10px var(--red)}
+    .btn-primary:hover{background:#b93b32}
+    .btn-dark{background:var(--chalk);color:#fff}
+    .btn-paper{background:#fff;color:var(--ink);border-color:var(--line)}
+    .btn-soft{background:var(--green-soft);color:var(--chalk);border-color:#cce6da}
+    .btn-danger{background:var(--red-soft);color:#9d2c25;border-color:#efcbc7}
+    .btn-small{padding:7px 10px;font-size:.77rem;border-radius:9px}
+    .btn-icon{width:38px;height:38px;padding:0}
+    .toolbar{display:flex;flex-wrap:wrap;gap:9px;align-items:center}
+    .upload-zone{border:2px dashed #aebbb3;border-radius:14px;padding:21px;text-align:center;background:#fff;transition:.18s ease}
+    .upload-zone.drag{border-color:var(--green);background:var(--green-soft)}
+    .upload-zone input{display:none}
+    .upload-icon{font-size:1.7rem;display:block;margin-bottom:4px}
+    .notice{border-radius:12px;padding:12px 14px;font-size:.8rem;display:flex;gap:10px;align-items:flex-start}
+    .notice-info{background:var(--blue-soft);border:1px solid #c7e1ed;color:#245b75}
+    .notice-warn{background:var(--yellow-soft);border:1px solid #eddc9d;color:#6a5311}
+    .notice-ok{background:var(--green-soft);border:1px solid #c8e7d8;color:#245e49}
+    .segmented{display:flex;flex-wrap:wrap;gap:7px}
+    .segmented label{cursor:pointer}
+    .segmented input{position:absolute;opacity:0;pointer-events:none}
+    .segmented span{display:block;border:1px solid var(--line);background:#fff;border-radius:10px;padding:8px 12px;transition:.15s ease}
+    .segmented input:checked + span{background:var(--chalk);color:#fff;border-color:var(--chalk)}
+    .progress-track{height:9px;background:#e2e6e1;border-radius:999px;overflow:hidden}
+    .progress-fill{height:100%;background:linear-gradient(90deg,var(--green),var(--yellow));width:0%;transition:width .35s ease}
+    .source-insights{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-top:15px}
+    .insight{background:#fff;border:1px solid var(--line);border-radius:11px;padding:11px;text-align:center}
+    .insight strong{display:block;font-size:1.25rem}
+    .insight span{font-size:.7rem;color:var(--muted)}
+    .question-list{display:grid;gap:16px}
+    .question-card{background:var(--paper);border:1px solid var(--line);border-radius:var(--radius);box-shadow:var(--shadow);overflow:hidden}
+    .question-card.approved{border-left:5px solid var(--green)}
+    .q-head{padding:13px 16px;background:#f7f6ef;border-bottom:1px solid var(--line);display:flex;align-items:center;justify-content:space-between;gap:12px}
+    .q-number{display:flex;align-items:center;gap:10px;font-weight:900}
+    .q-index{width:30px;height:30px;border-radius:9px;background:var(--chalk);color:#fff;display:grid;place-items:center;font-size:.8rem}
+    .q-meta{display:flex;gap:6px;flex-wrap:wrap}
+    .badge{display:inline-flex;align-items:center;border-radius:999px;padding:3px 8px;font-size:.68rem;font-weight:800;background:#e8ebe8;color:#52605c}
+    .badge.easy{background:var(--green-soft);color:#28634d}
+    .badge.standard{background:var(--blue-soft);color:#2a617a}
+    .badge.hard{background:var(--red-soft);color:#983b34}
+    .badge.ok{background:var(--green-soft);color:#28634d}
+    .badge.warn{background:var(--yellow-soft);color:#715a15}
+    .q-body{padding:18px}
+    .q-text{min-height:76px}
+    .option-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px;margin-top:12px}
+    .option-row{display:grid;grid-template-columns:34px 1fr;align-items:center;border:1px solid var(--line);border-radius:11px;background:#fff;overflow:hidden}
+    .option-radio{display:grid;place-items:center;height:100%;background:#eef1ed}
+    .option-radio input{width:18px;height:18px;accent-color:var(--green)}
+    .option-row input[type="text"]{border:0;border-radius:0;box-shadow:none;background:transparent}
+    .q-footer{display:flex;justify-content:space-between;align-items:center;gap:12px;margin-top:14px;flex-wrap:wrap}
+    .q-settings{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+    .q-settings select,.q-settings input{width:auto;padding:7px 9px;font-size:.76rem}
+    .source-quote{margin-top:13px;background:#f2f5f1;border-left:3px solid var(--green);border-radius:0 9px 9px 0;padding:9px 12px;font-size:.75rem;color:#54615d}
+    .empty{border:2px dashed #c7cec8;border-radius:18px;padding:44px 20px;text-align:center;color:var(--muted);background:rgba(255,255,255,.45)}
+    .empty-icon{font-size:2.2rem;display:block;margin-bottom:8px}
+    .filterbar{display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;margin-bottom:15px}
+    .search{min-width:min(100%,300px)}
+    .quality-score{display:grid;grid-template-columns:190px 1fr;gap:25px;align-items:center}
+    .score-ring{--score:0;width:165px;height:165px;border-radius:50%;background:conic-gradient(var(--green) calc(var(--score)*1%),#e1e5df 0);display:grid;place-items:center;position:relative;margin:auto}
+    .score-ring:before{content:"";position:absolute;inset:13px;border-radius:50%;background:var(--paper)}
+    .score-content{position:relative;text-align:center}
+    .score-num{font-size:2.8rem;font-weight:900;line-height:1}
+    .score-label{font-size:.72rem;color:var(--muted)}
+    .quality-bars{display:grid;gap:12px}
+    .quality-row{display:grid;grid-template-columns:80px 1fr 42px;gap:10px;align-items:center;font-size:.8rem}
+    .mini-track{height:8px;background:#e3e6e2;border-radius:99px;overflow:hidden}
+    .mini-fill{height:100%;border-radius:99px}
+    .issue-list{display:grid;gap:10px}
+    .issue{display:grid;grid-template-columns:34px 1fr auto;gap:10px;align-items:start;border:1px solid var(--line);border-radius:12px;padding:12px;background:#fff}
+    .issue-icon{width:30px;height:30px;border-radius:9px;display:grid;place-items:center;font-weight:900}
+    .issue.error .issue-icon{background:var(--red-soft);color:var(--red)}
+    .issue.warning .issue-icon{background:var(--yellow-soft);color:#806419}
+    .issue.info .issue-icon{background:var(--blue-soft);color:var(--blue)}
+    .issue-title{font-weight:800;font-size:.85rem}
+    .issue-detail{color:var(--muted);font-size:.73rem;margin-top:2px}
+    .export-card{display:grid;grid-template-columns:56px 1fr auto;gap:14px;align-items:center;border:1px solid var(--line);background:#fff;border-radius:14px;padding:15px}
+    .export-icon{width:52px;height:52px;border-radius:14px;background:var(--green-soft);color:var(--chalk);display:grid;place-items:center;font-size:1.4rem;font-weight:900}
+    .export-card h3{font-size:.95rem}
+    .export-card p{font-size:.73rem;color:var(--muted);margin:3px 0 0}
+    .project-list{display:grid;gap:11px}
+    .project-item{display:grid;grid-template-columns:1fr auto;gap:12px;align-items:center;border:1px solid var(--line);border-radius:13px;background:#fff;padding:14px}
+    .project-title{font-weight:900}
+    .project-meta{font-size:.72rem;color:var(--muted);margin-top:3px}
+    .project-actions{display:flex;gap:6px}
+    .stamp{display:inline-block;border:3px double var(--red);color:var(--red);font-weight:900;padding:5px 9px;border-radius:8px;transform:rotate(-3deg);font-size:.78rem;letter-spacing:.08em}
+    .modal-backdrop{position:fixed;inset:0;background:rgba(8,23,21,.62);display:none;place-items:center;padding:18px;z-index:100}
+    .modal-backdrop.open{display:grid}
+    .modal{width:min(620px,100%);max-height:90vh;overflow:auto;background:var(--paper);border-radius:20px;box-shadow:0 24px 70px rgba(0,0,0,.35);padding:25px}
+    .modal-head{display:flex;align-items:center;justify-content:space-between;margin-bottom:16px}
+    .toast-wrap{position:fixed;right:20px;bottom:20px;display:grid;gap:9px;z-index:200;width:min(360px,calc(100vw - 40px))}
+    .toast{background:var(--chalk-deep);color:#fff;border-radius:12px;padding:12px 14px;box-shadow:0 12px 35px rgba(0,0,0,.23);font-size:.82rem;animation:toastIn .22s ease}
+    .toast.error{background:#842f2a}
+    .toast.warn{background:#765b12}
+    @keyframes toastIn{from{opacity:0;transform:translateY(9px)}to{opacity:1;transform:none}}
+    .hidden{display:none!important}
+    .muted{color:var(--muted)}
+    .small{font-size:.75rem}
+    .mt-1{margin-top:8px}.mt-2{margin-top:16px}.mt-3{margin-top:24px}
+    .right{text-align:right}
+    .mobile-only{display:none}
+    @media(max-width:1080px){.grid-4{grid-template-columns:repeat(2,1fr)}.grid-3{grid-template-columns:repeat(2,1fr)}.hero{grid-template-columns:1fr}.hero-note{max-width:520px}.field.quarter{grid-column:span 6}}
+    @media(max-width:780px){
+      :root{--topbar:64px}
+      .app{display:block}.sidebar{transform:translateX(-105%);transition:.22s ease;width:min(285px,86vw)}.sidebar.open{transform:none}.main{grid-column:auto}.mobile-menu{display:inline-flex}.topbar{padding:0 14px}.autosave{display:none}.content{padding:18px 14px 34px}.hero{padding:28px 21px;border-radius:19px}.hero h1{max-width:none}.grid-2,.grid-3,.grid-4{grid-template-columns:1fr}.form-grid{display:block}.field{margin-bottom:12px}.option-grid{grid-template-columns:1fr}.quality-score{grid-template-columns:1fr}.export-card{grid-template-columns:46px 1fr}.export-card .btn{grid-column:1/-1}.project-item{grid-template-columns:1fr}.source-insights{grid-template-columns:repeat(3,1fr)}.mobile-only{display:inline-flex}.top-actions>.btn{display:none}
+    }
+    @media(max-width:450px){.source-insights{grid-template-columns:1fr}.hero-actions .btn{width:100%}.q-head{align-items:flex-start}.q-meta{justify-content:flex-end}.quality-row{grid-template-columns:68px 1fr 36px}.toolbar .btn{flex:1}.section-head{align-items:flex-start;flex-direction:column}}
+    @media(prefers-reduced-motion:reduce){*{scroll-behavior:auto!important;animation:none!important;transition:none!important}}
+    @media print{.sidebar,.topbar,.no-print,.toast-wrap,.modal-backdrop{display:none!important}.app{display:block}.main{display:block}.content{max-width:none;padding:0}.page{display:none!important}.page.active{display:block!important}.card,.question-card,.stat{box-shadow:none;break-inside:avoid}body{background:#fff}@page{size:A4;margin:15mm}}
+
+    /* QuizCraft EDU visual system — aurora stationery */
+    :root{
+      --chalk:#3f46c7;--chalk-deep:#17213d;--chalk-soft:#5963e8;
+      --paper:#ffffff;--paper-2:#f4f6fc;--ink:#17213d;--muted:#67708a;--line:#e3e7f1;
+      --red:#ff647c;--red-soft:#fff0f3;--yellow:#ffc857;--yellow-soft:#fff6d9;
+      --blue:#5475e8;--blue-soft:#edf1ff;--green:#18a999;--green-soft:#e8faf6;
+      --shadow:0 2px 4px rgba(29,39,77,.04),0 18px 42px -24px rgba(38,52,109,.28);
+      --radius:20px;--radius-sm:12px;
+    }
+    body{background:
+      radial-gradient(circle at 88% 8%,rgba(140,124,255,.12),transparent 24rem),
+      radial-gradient(circle at 18% 72%,rgba(32,193,177,.09),transparent 26rem),var(--paper-2);
+      font-family:"Noto Sans JP","Yu Gothic UI","Hiragino Sans",sans-serif;letter-spacing:.005em}
+    h1,h2,h3,.brand-title,.stat-value,.metric-card strong{font-family:"Manrope","Noto Sans JP","Hiragino Sans",sans-serif}
+    .sidebar{background:linear-gradient(168deg,#17213d 0%,#262d63 55%,#3f46c7 140%);box-shadow:14px 0 42px rgba(26,34,70,.16)}
+    .sidebar:after{content:"";position:absolute;left:-70px;bottom:7%;width:210px;height:210px;border-radius:47% 53% 58% 42%;background:linear-gradient(135deg,rgba(83,222,205,.18),rgba(124,105,255,.08));filter:blur(2px);pointer-events:none}
+    .brand{border-bottom-color:rgba(255,255,255,.1)}
+    .brand-mark{background:linear-gradient(145deg,#5fe0cf,#8f7bff);color:#17213d;border-radius:15px;box-shadow:0 10px 25px rgba(79,223,205,.25);transform:rotate(-5deg)}
+    .brand-title{font-size:1.05rem;letter-spacing:-.02em}.brand-title span{color:#63decf;font-size:.72em;letter-spacing:.12em}.brand-sub{color:#9fa9ce;text-transform:uppercase;letter-spacing:.12em;font-size:.62rem}
+    .nav{gap:4px}.nav-btn{color:#b8c1e3;border:1px solid transparent}.nav-btn:hover{background:rgba(255,255,255,.07);border-color:rgba(255,255,255,.05)}.nav-btn.active{background:linear-gradient(100deg,#fff,#f2f1ff);color:#313a99;box-shadow:0 10px 26px rgba(8,15,46,.22)}
+    .nav-icon{width:28px;height:28px;display:grid;place-items:center;border-radius:9px;background:rgba(255,255,255,.07);font-family:"Manrope",sans-serif}.nav-btn.active .nav-icon{background:#e8e9ff;color:#454cc9}
+    .topbar{background:rgba(250,251,255,.82);border-bottom-color:rgba(70,80,130,.09)}.page-kicker{color:#5963e8;font-family:"Manrope",sans-serif}.autosave-dot{background:#20c2ae;box-shadow:0 0 0 5px rgba(32,194,174,.12)}
+    .hero{background:linear-gradient(128deg,#17213d 0%,#30387f 48%,#615ee8 100%);min-height:390px;border-radius:30px;box-shadow:0 30px 70px -38px rgba(44,47,139,.6)}
+    .hero:before{border-color:rgba(114,237,218,.11);right:-80px;top:-145px}.hero:after{content:"?";font-family:"Manrope",sans-serif;color:rgba(255,255,255,.035);right:4%;bottom:-110px}
+    .hero h1{max-width:17ch;white-space:pre-line;background:linear-gradient(95deg,#fff 25%,#c8fff7 62%,#e2dcff);-webkit-background-clip:text;background-clip:text;color:transparent}
+    .eyebrow{background:rgba(96,224,207,.12);border-color:rgba(96,224,207,.26);color:#b9fff5;font-family:"Manrope",sans-serif;letter-spacing:.11em}
+    .hero-note{background:linear-gradient(145deg,rgba(255,255,255,.98),rgba(245,247,255,.96));border:1px solid rgba(255,255,255,.85);transform:rotate(1.1deg);box-shadow:0 24px 60px rgba(9,15,54,.32)}
+    .hero-note:before{background:repeating-linear-gradient(90deg,#ff647c 0 9px,transparent 9px 17px);border-radius:8px 8px 0 0}
+    .card,.stat,.question-card{border-color:rgba(111,123,171,.16);box-shadow:var(--shadow);background:rgba(255,255,255,.92);backdrop-filter:blur(10px)}
+    .card{position:relative}.card:before{content:"";position:absolute;left:22px;right:22px;top:-1px;height:3px;border-radius:0 0 5px 5px;background:linear-gradient(90deg,#655ee8,#28c1b2,#ff7a8f);opacity:.55}
+    .stat-value{background:linear-gradient(110deg,#25306d,#5e64e9);-webkit-background-clip:text;background-clip:text;color:transparent}
+    .btn{border-radius:12px}.btn-primary{background:linear-gradient(105deg,#5b61e8,#815ee9 58%,#ed668b);box-shadow:0 12px 25px -14px #6049d8}.btn-primary:hover{background:linear-gradient(105deg,#4f55d8,#7350de 58%,#df587e)}.btn-dark{background:linear-gradient(110deg,#17213d,#303a7a)}.btn-soft{background:#ebfaf7;color:#147c71;border-color:#c9eee7}.btn-paper{background:rgba(255,255,255,.94)}
+    .step-chip{background:linear-gradient(145deg,#555ce1,#7770ee);box-shadow:0 7px 16px -10px #4b4fd0}.segmented input:checked + span{background:linear-gradient(110deg,#4f57d7,#6f68e8);border-color:#5c62db;box-shadow:0 8px 20px -14px #4a4fc5}
+    .upload-zone{background:linear-gradient(145deg,#fbfcff,#f4f3ff);border-color:#bdc2e4}.upload-zone.drag{border-color:#4ccbbc;background:#eafbf8}.notice-info{background:#eef2ff;border-color:#d7ddfa;color:#354b8c}.notice-warn{background:#fff7df;border-color:#f1dfa3;color:#6b5417}.notice-ok{background:#e9faf5}
+    input[type="text"],input[type="url"],input[type="number"],textarea,select{border-color:#d5d9e8;background:#fff}.option-radio{background:#f0f2fa}.option-radio input{accent-color:#5b61e8}.question-card.approved{border-left-color:#24b7a4}.q-index{background:linear-gradient(145deg,#565ee0,#7f6bec)}.source-quote{background:#f3f5ff;border-left-color:#6970e8}
+    .score-ring{background:conic-gradient(#22b8a6 calc(var(--score)*1%),#e7e9f2 0)}.export-icon{background:linear-gradient(145deg,#edf0ff,#e9faf6);color:#4d55c8}
+    .preset-ribbon{display:grid;grid-template-columns:1.1fr repeat(3,minmax(150px,1fr));gap:10px;align-items:stretch;background:linear-gradient(115deg,#202a55,#3d4299);border-radius:20px;padding:12px;color:#fff;box-shadow:0 18px 38px -26px #2e347f;margin-bottom:16px}.preset-ribbon>div:first-child{padding:10px 12px;display:grid;align-content:center}.preset-label{font-family:"Manrope",sans-serif;color:#75e6d8;font-size:.65rem;letter-spacing:.16em;font-weight:800}.preset-ribbon strong{font-size:.93rem}.preset-btn{border:1px solid rgba(255,255,255,.12);background:rgba(255,255,255,.08);color:#fff;border-radius:14px;padding:10px 12px;text-align:left;display:grid;grid-template-columns:30px 1fr;gap:0 7px;transition:.18s}.preset-btn:hover{background:rgba(255,255,255,.15);transform:translateY(-2px)}.preset-btn span{grid-row:1/3;width:29px;height:29px;border-radius:9px;background:rgba(98,225,208,.17);display:grid;place-items:center;color:#8cf2e5}.preset-btn b{font-size:.78rem}.preset-btn small{font-size:.63rem;color:#bfc8eb}
+    .smart-toolbar{display:flex;align-items:center;gap:9px;flex-wrap:wrap;background:linear-gradient(100deg,#f0f1ff,#f2fbf9);border:1px solid #dde1f3;border-radius:16px;padding:11px 13px;margin-bottom:15px}.smart-toolbar>div{display:grid;grid-template-columns:28px auto;align-items:center;margin-right:auto}.smart-toolbar small{grid-column:2;color:var(--muted);font-size:.65rem}.smart-spark{grid-row:1/3;width:27px;height:27px;border-radius:9px;background:linear-gradient(145deg,#665ee9,#20bfae);color:#fff;display:grid;place-items:center;margin-right:8px}
+    .analytics-hero{position:relative;overflow:hidden;background:linear-gradient(120deg,#1d2750,#3d459d);color:#fff;border-radius:24px;padding:30px;display:grid;grid-template-columns:1fr 220px;min-height:190px;align-items:center}.analytics-kicker{font-family:"Manrope",sans-serif;color:#77e9dc;letter-spacing:.16em;font-size:.68rem;font-weight:800}.analytics-hero h3{font-size:var(--step-2);margin:7px 0}.analytics-hero p{color:#c7cdeb;max-width:62ch;margin:0}.radar-orbit{width:160px;height:160px;border:1px solid rgba(120,235,222,.3);border-radius:50%;display:grid;place-items:center;position:relative;margin:auto}.radar-orbit:before,.radar-orbit:after{content:"";position:absolute;border:1px solid rgba(255,255,255,.12);border-radius:50%;inset:23px}.radar-orbit:after{inset:52px}.radar-orbit span{font:bold 3rem "Manrope";color:#7ce9dc}.radar-orbit i,.radar-orbit b{position:absolute;width:11px;height:11px;border-radius:50%;background:#ff7c94;box-shadow:0 0 18px #ff7c94}.radar-orbit i{top:24px;right:29px}.radar-orbit b{bottom:18px;left:40px;background:#ffc857;box-shadow:0 0 18px #ffc857}
+    .metric-card{border-radius:18px;padding:18px;color:#fff;min-height:135px;display:grid;align-content:space-between;box-shadow:var(--shadow)}.metric-card span{font-size:.72rem;font-weight:700;opacity:.82}.metric-card strong{font-size:2rem}.metric-card small{font-family:"Manrope";opacity:.7}.metric-card.coral{background:linear-gradient(145deg,#f25f7a,#ff8c8c)}.metric-card.violet{background:linear-gradient(145deg,#535ee1,#8a69e8)}.metric-card.mint{background:linear-gradient(145deg,#159f93,#37c6b4)}.metric-card.amber{background:linear-gradient(145deg,#e4a62f,#f5c75b);color:#4d3b11}
+    .chart-card{min-height:300px}.donut-layout{display:grid;grid-template-columns:150px 1fr;align-items:center;gap:20px}.donut{width:145px;height:145px;border-radius:50%;display:grid;place-items:center}.donut:after{content:"";width:82px;height:82px;border-radius:50%;background:#fff}.legend{display:grid;gap:8px}.legend-row{display:grid;grid-template-columns:12px 1fr auto;gap:8px;align-items:center;font-size:.78rem}.legend-dot{width:10px;height:10px;border-radius:4px}.bar-chart{display:grid;grid-template-columns:repeat(4,1fr);height:190px;align-items:end;gap:16px;padding:15px 10px 0}.bar-col{height:100%;display:grid;grid-template-rows:1fr auto;gap:7px;text-align:center}.bar-space{display:flex;align-items:end;justify-content:center}.bar-fill{width:min(48px,90%);min-height:4px;border-radius:10px 10px 4px 4px;background:linear-gradient(180deg,#6d66eb,#3fc5b6);position:relative}.bar-fill strong{position:absolute;top:-28px;left:50%;transform:translateX(-50%);font-size:.75rem}.bar-col span{font-size:.7rem;color:var(--muted)}.tag-cloud{display:flex;flex-wrap:wrap;align-content:flex-start;gap:9px}.analysis-tag{border-radius:999px;padding:8px 12px;background:#f0f2ff;color:#414ba6;font-size:.76rem;font-weight:700}.analysis-tag b{margin-left:6px}.recommend-list{display:grid;gap:10px}.recommend{display:grid;grid-template-columns:30px 1fr;gap:9px;align-items:start;padding:10px;border-radius:12px;background:#f7f8fd}.recommend span{width:28px;height:28px;border-radius:9px;background:#e7e9ff;color:#4d55c8;display:grid;place-items:center}.recommend b{font-size:.78rem}.recommend p{font-size:.69rem;color:var(--muted);margin:2px 0}
+    .studio-badge{background:linear-gradient(100deg,#5c62e6,#24bbaa);color:#fff;border-radius:999px;padding:6px 12px;font-size:.72rem;font-weight:800}.studio-flow{display:grid;grid-template-columns:1fr auto 1fr auto 1fr;gap:12px;align-items:center}.studio-step{border:1px solid var(--line);background:#fff;border-radius:17px;padding:17px;display:grid;grid-template-columns:38px 1fr;gap:10px;min-height:125px}.studio-step h3{font-size:.9rem}.studio-step p{font-size:.7rem;color:var(--muted);margin:4px 0}.flow-no{font:bold .72rem "Manrope";width:35px;height:35px;border-radius:11px;background:linear-gradient(145deg,#e9eaff,#e5faf6);color:#4d55c8;display:grid;place-items:center}.flow-arrow{color:#8f96b4;font-size:1.4rem}.studio-card:before{opacity:.8}.studio-textarea{min-height:410px;font-family:"Noto Sans JP",monospace;font-size:.78rem;background:#f8f9fd}.ai-import-options{display:flex;gap:18px;flex-wrap:wrap}.ai-import-options input{accent-color:#5b61e8}
+    .preview-stage{background:linear-gradient(135deg,#151d3c,#2c3478 50%,#594cc4);border-radius:28px;min-height:620px;padding:28px;color:#fff;box-shadow:0 30px 70px -38px #30367c;position:relative;overflow:hidden}.preview-stage:before{content:"";position:absolute;width:360px;height:360px;border-radius:42% 58% 60% 40%;background:rgba(59,211,192,.12);right:-130px;top:-140px;transform:rotate(25deg)}.preview-stage:fullscreen{border-radius:0;display:flex;flex-direction:column;justify-content:center;padding:5vw}.preview-top{position:relative;z-index:1;display:flex;justify-content:space-between;align-items:flex-start;gap:20px}.preview-brand{font:800 .7rem "Manrope";letter-spacing:.12em;color:#b7c0ea}.preview-brand b{color:#69e1d3}.preview-top h3{font-size:1rem;margin-top:4px}.preview-progress{min-width:180px;text-align:right}.preview-progress strong{font:700 .8rem "Manrope"}.preview-track{height:5px;background:rgba(255,255,255,.15);border-radius:99px;margin-top:6px;overflow:hidden}.preview-track span{display:block;height:100%;background:linear-gradient(90deg,#63dfcf,#ffc857);width:0;transition:.25s}.preview-empty{min-height:450px;display:grid;place-items:center;align-content:center;text-align:center;color:#c9ceea}.preview-empty span{font-size:3rem;color:#66dfd0}.preview-empty h3{font-size:1.2rem}.preview-empty p{margin:4px}.preview-question{position:relative;z-index:1;margin:75px auto 34px;max-width:1000px;text-align:center;font-size:clamp(1.45rem,2.4vw,2.55rem);font-weight:800;line-height:1.55}.preview-options{position:relative;z-index:1;display:grid;grid-template-columns:repeat(2,1fr);gap:16px;max-width:1050px;margin:auto}.preview-option{border:1px solid rgba(255,255,255,.14);border-radius:18px;padding:18px 20px;min-height:83px;display:grid;grid-template-columns:38px 1fr;align-items:center;gap:10px;background:rgba(255,255,255,.08);font-weight:700;transition:.2s}.preview-option i{width:34px;height:34px;border-radius:11px;display:grid;place-items:center;background:rgba(255,255,255,.1);font-style:normal}.preview-option.correct{background:linear-gradient(110deg,rgba(39,195,174,.83),rgba(56,174,142,.76));border-color:#78f0df;box-shadow:0 0 0 3px rgba(111,235,218,.13)}.preview-option.dim{opacity:.35}.preview-source{position:relative;z-index:1;max-width:1000px;margin:20px auto 0;text-align:center;color:#aeb7df;font-size:.68rem;min-height:22px}.preview-controls{position:absolute;z-index:2;left:50%;bottom:25px;transform:translateX(-50%);display:flex;gap:10px}.preview-nav,.preview-reveal{border:1px solid rgba(255,255,255,.16);color:#fff;background:rgba(255,255,255,.1);border-radius:14px;padding:10px 16px;font-weight:800}.preview-nav{width:47px}.preview-reveal{min-width:150px;background:linear-gradient(100deg,#5b61e8,#23b9aa)}
+    @media(max-width:1080px){.preset-ribbon{grid-template-columns:1fr repeat(3,1fr)}.preset-ribbon>div:first-child{grid-column:1/-1}.studio-flow{grid-template-columns:1fr}.flow-arrow{transform:rotate(90deg);justify-self:center}.analytics-hero{grid-template-columns:1fr 160px}}
+    @media(max-width:780px){.preset-ribbon{grid-template-columns:1fr}.preset-ribbon>div:first-child{grid-column:auto}.analytics-hero{grid-template-columns:1fr}.radar-orbit{display:none}.donut-layout{grid-template-columns:1fr}.donut{margin:auto}.studio-flow{display:grid}.preview-stage{min-height:680px;padding:20px 15px}.preview-top{display:block}.preview-progress{margin-top:14px;text-align:left}.preview-question{margin-top:45px}.preview-options{grid-template-columns:1fr}.smart-toolbar>div{width:100%}.preview-controls{bottom:16px}}
+
+    .sidebar{overflow-y:auto}.sidebar-foot{position:relative;z-index:1}.nav-btn{flex-shrink:0}
+    .capability-band{display:grid;grid-template-columns:52px minmax(230px,1fr) auto auto;gap:14px;align-items:center;background:linear-gradient(105deg,#fff,#f1f3ff 55%,#ecfbf8);border:1px solid #dfe4f4;border-radius:19px;padding:14px 16px;box-shadow:var(--shadow)}.mode-orb{width:48px;height:48px;border-radius:15px;background:linear-gradient(145deg,#5e65e8,#22baa9);display:grid;place-items:center;color:#fff;font-size:1.2rem;box-shadow:0 10px 23px -14px #4d55c9}.capability-band small{font:800 .61rem "Manrope";letter-spacing:.13em;color:#6770cf}.capability-band strong{display:block}.capability-band p{margin:1px 0;color:var(--muted);font-size:.67rem}.capability-pills{display:flex;gap:5px;flex-wrap:wrap}.capability-pills span{padding:4px 7px;border-radius:7px;background:#fff;border:1px solid #e0e3f0;color:#505879;font:800 .57rem "Manrope"}
+    .lab-status,.studio-badge,.security-chip{background:linear-gradient(105deg,#5661df,#22bbaa);color:#fff;border-radius:999px;padding:6px 11px;font:800 .65rem "Manrope";letter-spacing:.06em}.document-drop{min-height:235px;border:2px dashed #afb8e1;border-radius:25px;background:linear-gradient(135deg,rgba(255,255,255,.84),rgba(240,241,255,.9));display:flex;align-items:center;justify-content:center;gap:35px;padding:26px;text-align:left;transition:.2s}.document-drop.drag{border-color:#34bfae;background:#eafaf7}.document-drop h3{font-size:var(--step-1)}.document-drop p{color:var(--muted);margin:5px 0 14px}.doc-orbit{width:145px;height:145px;border:1px solid #cbd1ef;border-radius:50%;position:relative;display:grid;place-items:center;background:radial-gradient(circle,#fff 0 29%,#f0f1ff 30% 49%,transparent 50%)}.doc-orbit>span{width:48px;height:48px;border-radius:16px;background:linear-gradient(145deg,#6067e9,#25bbaa);color:#fff;font-size:1.5rem;display:grid;place-items:center}.doc-orbit i{position:absolute;font:800 .56rem "Manrope";font-style:normal;color:#525bbd;background:#fff;border:1px solid #dfe2f3;padding:4px 6px;border-radius:7px}.doc-orbit i:nth-of-type(1){top:2px}.doc-orbit i:nth-of-type(2){right:-5px;top:49px}.doc-orbit i:nth-of-type(3){bottom:6px}.doc-orbit i:nth-of-type(4){left:-5px;top:49px}.mode-choice{display:grid;grid-template-columns:1fr 1fr;gap:8px}.mode-choice input{position:absolute;opacity:0}.mode-choice span{display:block;border:1px solid var(--line);border-radius:12px;padding:10px;background:#fff}.mode-choice input:checked+span{border-color:#6268e6;background:#f0f1ff;box-shadow:0 0 0 3px rgba(98,104,230,.1)}.mode-choice b,.mode-choice small{display:block}.mode-choice small{color:var(--muted);font-size:.64rem}.document-result{min-height:310px;background:#f8f9fd}.document-actions{display:flex;gap:8px}.process-box{background:#f5f6fb;border-radius:12px;padding:11px}.process-line{display:flex;justify-content:space-between;font-size:.7rem;margin-bottom:6px}.document-stats{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-top:10px}.document-stats div{text-align:center;padding:9px;background:#f5f6fb;border-radius:10px}.document-stats strong,.document-stats span{display:block}.document-stats span{font-size:.62rem;color:var(--muted)}.support-tile{position:relative;background:#fff;border:1px solid var(--line);border-radius:16px;padding:15px;box-shadow:var(--shadow)}.support-tile b,.support-tile span{display:block}.support-tile span{font-size:.69rem;color:var(--muted);margin-top:3px}.support-tile small{position:absolute;right:11px;top:11px;font:800 .55rem "Manrope";color:#fff;border-radius:6px;padding:3px 6px}.support-tile.ready small{background:#1dad9c}.support-tile.connected small{background:#6569dd}
+    .perspective-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:14px}.perspective{position:relative;overflow:hidden;border-radius:20px;padding:22px;color:#fff;min-height:190px;box-shadow:var(--shadow)}.perspective>span{font:800 .65rem "Manrope";opacity:.7}.perspective h3{font-size:1.05rem;margin:20px 0 5px}.perspective p{font-size:.7rem;opacity:.82;margin:0}.perspective strong{display:block;margin-top:16px;font-size:1.35rem}.perspective:after{content:"";position:absolute;width:130px;height:130px;border:25px solid rgba(255,255,255,.09);border-radius:50%;right:-48px;top:-42px}.perspective.knowledge{background:linear-gradient(145deg,#5361dc,#7769e9)}.perspective.thinking{background:linear-gradient(145deg,#129d94,#37c5b3)}.perspective.attitude{background:linear-gradient(145deg,#ec627d,#fa9389)}.curriculum-summary{display:grid;gap:10px}.curr-sum-row{display:grid;grid-template-columns:130px 1fr 45px;gap:9px;align-items:center;font-size:.74rem}.curr-sum-track{height:9px;border-radius:99px;background:#e8eaf2;overflow:hidden}.curr-sum-fill{height:100%;border-radius:99px}.mapping-table{display:grid;gap:8px}.mapping-row{display:grid;grid-template-columns:42px minmax(220px,1fr) 190px 160px;gap:10px;align-items:center;border:1px solid var(--line);background:#fff;border-radius:13px;padding:9px}.mapping-row .map-index{width:31px;height:31px;border-radius:9px;background:#edefff;color:#5158bd;display:grid;place-items:center;font-weight:800}.mapping-row p{font-size:.72rem;margin:0}.mapping-row select{font-size:.69rem;padding:7px}
+    .result-format{display:flex;align-items:center;gap:12px;background:linear-gradient(100deg,#202953,#3c4393);color:#fff;border-radius:18px;padding:12px 15px}.result-format>div{display:flex;gap:9px;align-items:center;flex:1}.result-format p{font-size:.65rem;color:#c9cfed;margin:0}.format-icon{width:42px;height:42px;border-radius:12px;background:rgba(100,226,209,.14);color:#78e5d7;display:grid;place-items:center;font:800 .62rem "Manrope"}.performance-list{display:grid;gap:11px}.performance-row{display:grid;grid-template-columns:38px 1fr 52px;gap:9px;align-items:center}.performance-row>span{font-size:.68rem}.performance-row b{font-size:.75rem}.performance-track{height:12px;background:#ebedf4;border-radius:99px;overflow:hidden}.performance-fill{height:100%;border-radius:99px;background:linear-gradient(90deg,#f36883,#f5bc54,#25b5a5)}.next-tips{display:grid;gap:9px}.next-tip{border:1px solid var(--line);border-radius:13px;padding:11px;background:#fafbff}.next-tip b{font-size:.77rem}.next-tip p{font-size:.67rem;color:var(--muted);margin:3px 0 8px}.distractor-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:10px}.distractor-card{border:1px solid var(--line);border-radius:13px;padding:12px;background:#fff}.distractor-card>span{font-size:.61rem;color:#e65774;font-weight:800}.distractor-card b{display:block;font-size:.76rem;margin:4px 0}.distractor-card p{font-size:.66rem;color:var(--muted);margin:0}
+    .bank-toolbar{display:grid;grid-template-columns:1fr 160px 140px auto auto;gap:8px;background:#fff;border:1px solid var(--line);border-radius:16px;padding:11px}.bank-summary{display:grid;grid-template-columns:repeat(3,130px) 1fr;gap:10px;align-items:center;background:linear-gradient(105deg,#202a55,#41489e);color:#fff;border-radius:18px;padding:14px 18px;margin-top:12px}.bank-summary div{border-right:1px solid rgba(255,255,255,.13)}.bank-summary strong,.bank-summary span{display:block}.bank-summary strong{font-size:1.4rem}.bank-summary span{font-size:.62rem;color:#c8ceee}.bank-summary button{justify-self:end}.bank-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:12px;margin-top:14px}.bank-card{display:grid;grid-template-columns:28px 1fr;gap:10px;border:1px solid var(--line);border-radius:16px;padding:14px;background:#fff;box-shadow:var(--shadow)}.bank-card input{width:18px;height:18px;accent-color:#6268e6;margin-top:4px}.bank-card h3{font-size:.82rem}.bank-card p{font-size:.68rem;color:var(--muted);margin:4px 0}.bank-tags{display:flex;gap:5px;flex-wrap:wrap}.bank-tags span{font-size:.56rem;border-radius:6px;background:#f0f1ff;color:#4e56b4;padding:3px 6px}.bank-actions{display:flex;gap:6px;margin-top:9px}
+    .collab-status{font:800 .64rem "Manrope";padding:6px 10px;border-radius:999px;background:#e9ebf3;color:#68708d}.collab-status.online{background:#e5faf5;color:#168576}.version-list,.comment-list{display:grid;gap:8px;max-height:350px;overflow:auto}.version-item,.comment-item{border:1px solid var(--line);border-radius:12px;padding:10px;background:#fff}.version-item{display:grid;grid-template-columns:1fr auto;gap:8px}.version-item b,.comment-item b{font-size:.74rem}.version-item p,.comment-item p{font-size:.67rem;color:var(--muted);margin:2px 0}.version-item small,.comment-item small{font-size:.58rem;color:#8990a9}.comment-compose textarea{min-height:95px}.room-layout{display:grid;grid-template-columns:1fr auto auto;gap:10px;align-items:end}.remote-notice{margin-top:13px;display:flex;justify-content:space-between;gap:12px;align-items:center;background:#eef1ff;border:1px solid #d8ddf8;border-radius:13px;padding:11px}.remote-notice p{font-size:.67rem;color:var(--muted);margin:2px 0}
+    .mode-switcher{display:grid;grid-template-columns:1fr 1fr;gap:12px}.mode-switcher input{position:absolute;opacity:0}.mode-switcher span{display:grid;grid-template-columns:50px 1fr;gap:0 12px;align-items:center;border:2px solid #e1e4ef;border-radius:20px;background:#fff;padding:18px;cursor:pointer}.mode-switcher i{grid-row:1/3;width:48px;height:48px;border-radius:15px;background:#eff1f8;color:#666e8d;display:grid;place-items:center;font-style:normal;font-size:1.2rem}.mode-switcher b,.mode-switcher small{display:block}.mode-switcher small{color:var(--muted);font-size:.67rem}.mode-switcher input:checked+span{border-color:#6268e6;background:linear-gradient(115deg,#f3f4ff,#ecfbf8);box-shadow:0 12px 30px -22px #565dcc}.mode-switcher input:checked+span i{background:linear-gradient(145deg,#5c64e5,#23b9aa);color:#fff}.module-list{display:grid;gap:5px}.module-list>div{display:grid;grid-template-columns:12px 1fr auto;gap:8px;align-items:center;padding:9px;border-bottom:1px solid #eef0f5}.module-list b{font-size:.72rem}.module-list small{font-size:.61rem;color:var(--muted)}.module-dot{width:9px;height:9px;border-radius:50%}.module-dot.local{background:#20b7a5}.module-dot.online{background:#6268e6}.sync-status{padding:9px;border-radius:10px;background:#f4f5f9;color:var(--muted);font-size:.68rem}.sync-status.ok{background:#e8faf5;color:#147c70}.sync-status.error{background:#fff0f3;color:#a8354d}.server-spec{display:grid;grid-template-columns:170px 1fr;gap:7px;font-size:.68rem}.server-spec code{background:#202951;color:#74e2d4;border-radius:7px;padding:6px}.server-spec span{padding:6px;color:var(--muted)}
+    @media(max-width:1120px){.capability-band{grid-template-columns:52px 1fr auto}.capability-pills{grid-column:2/4}.mapping-row{grid-template-columns:36px 1fr}.mapping-row select{grid-column:2}.bank-toolbar{grid-template-columns:1fr 1fr}.bank-summary{grid-template-columns:repeat(3,1fr)}.bank-summary button{grid-column:1/-1;justify-self:stretch}.distractor-grid{grid-template-columns:repeat(2,1fr)}}
+    @media(max-width:780px){.capability-band{grid-template-columns:48px 1fr}.capability-pills,.capability-band>.btn{grid-column:1/-1}.document-drop{display:grid;text-align:center}.doc-orbit{margin:auto}.perspective-grid{grid-template-columns:1fr}.result-format{display:grid}.distractor-grid,.bank-grid{grid-template-columns:1fr}.bank-toolbar{grid-template-columns:1fr}.bank-summary{grid-template-columns:repeat(3,1fr)}.room-layout{grid-template-columns:1fr}.mode-switcher{grid-template-columns:1fr}.server-spec{grid-template-columns:1fr}.mapping-row{grid-template-columns:34px 1fr}.mapping-row select{grid-column:2}.document-stats{grid-template-columns:repeat(3,1fr)}}
+
+    .gemini-connect{display:grid;grid-template-columns:54px minmax(250px,1.5fr) minmax(190px,.7fr) auto minmax(190px,.7fr);gap:12px;align-items:end;background:linear-gradient(112deg,#171f44,#303a87 48%,#435eb0);color:#fff;border-radius:21px;padding:15px 17px;margin-bottom:16px;box-shadow:0 20px 42px -28px #283478}.gemini-connect label{color:#d9def6;font-size:.66rem}.gemini-symbol{width:50px;height:50px;border-radius:17px;background:conic-gradient(from 210deg,#4385f4,#9b72f2,#d96570,#f7c957,#45bfa9,#4385f4);display:grid;place-items:center;color:#fff;font:800 1.35rem "Manrope";box-shadow:0 9px 23px rgba(17,23,68,.3)}.gemini-symbol.small-symbol{width:40px;height:40px;border-radius:13px;font-size:1rem}.gemini-key-field{min-width:0}.secret-input{position:relative}.secret-input input{padding-right:57px}.secret-toggle{position:absolute;right:5px;top:50%;transform:translateY(-50%);border:0;background:#eef0fa;color:#4e5683;border-radius:8px;padding:5px 8px;font-size:.62rem;font-weight:800}.gemini-connect input,.gemini-connect select{background:rgba(255,255,255,.96);border-color:rgba(255,255,255,.2)}.gemini-status{display:grid;grid-template-columns:10px 1fr;gap:0 7px;align-items:center;border-radius:11px;background:#f2f3f8;padding:8px 10px;color:#5e6683}.gemini-connect .gemini-status{background:rgba(255,255,255,.1);color:#dce1f8}.gemini-status>span{grid-row:1/3;width:9px;height:9px;border-radius:50%;background:#949ab1;box-shadow:0 0 0 4px rgba(148,154,177,.12)}.gemini-status b{font-size:.68rem}.gemini-status small{font-size:.56rem;opacity:.78}.gemini-status.ok>span{background:#34cfb7;box-shadow:0 0 0 4px rgba(52,207,183,.14)}.gemini-status.error>span{background:#f06b83;box-shadow:0 0 0 4px rgba(240,107,131,.14)}.session-remember{display:flex;align-items:center;gap:6px;color:var(--muted);font-size:.65rem}.gemini-connect .session-remember{grid-column:2/6;color:#c8cfee}.session-remember input{accent-color:#6268e6}.gemini-brandline{display:flex;align-items:center;gap:11px;background:linear-gradient(105deg,#f1f3ff,#ecfaf7);border:1px solid #e0e4f4;border-radius:14px;padding:11px}.gemini-brandline p{font-size:.65rem;color:var(--muted);margin:2px 0}.gemini-settings-card:before{background:linear-gradient(90deg,#4385f4,#9b72f2,#d96570,#f7c957,#45bfa9);opacity:.9}.btn.is-busy{pointer-events:none;opacity:.72}.btn.is-busy:before{content:"";width:12px;height:12px;border:2px solid currentColor;border-right-color:transparent;border-radius:50%;animation:geminiSpin .8s linear infinite}@keyframes geminiSpin{to{transform:rotate(360deg)}}
+    @media(max-width:1150px){.gemini-connect{grid-template-columns:50px 1fr 1fr}.gemini-connect .session-remember{grid-column:2/4}}
+    @media(max-width:780px){.gemini-connect{grid-template-columns:45px 1fr}.gemini-connect>div:not(.gemini-symbol),.gemini-connect>.btn,.gemini-connect>.gemini-status,.gemini-connect .session-remember{grid-column:1/-1}.gemini-symbol{margin:auto}}
+  </style>
+</head>
+<body>
+<div class="app">
+  <aside class="sidebar" id="sidebar" aria-label="メインメニュー">
+    <div class="brand">
+      <div class="brand-mark">Q</div>
+      <div><div class="brand-title">QuizCraft <span>EDU PRO</span></div><div class="brand-sub">Connected question studio</div></div>
+    </div>
+    <nav class="nav">
+      <button class="nav-btn active" data-action="navigate" data-page="dashboard"><span class="nav-icon">⌂</span>ホーム</button>
+      <button class="nav-btn" data-action="navigate" data-page="source"><span class="nav-icon">▤</span>資料と設定</button>
+      <button class="nav-btn" data-action="navigate" data-page="documents"><span class="nav-icon">⌁</span>Document Lab</button>
+      <button class="nav-btn" data-action="navigate" data-page="questions"><span class="nav-icon">?</span>問題編集</button>
+      <button class="nav-btn" data-action="navigate" data-page="quality"><span class="nav-icon">✓</span>品質チェック</button>
+      <button class="nav-btn" data-action="navigate" data-page="curriculum"><span class="nav-icon">◇</span>指導要領・評価</button>
+      <button class="nav-btn" data-action="navigate" data-page="analytics"><span class="nav-icon">◫</span>構成分析</button>
+      <button class="nav-btn" data-action="navigate" data-page="insights"><span class="nav-icon">↗</span>誤答インサイト</button>
+      <button class="nav-btn" data-action="navigate" data-page="studio"><span class="nav-icon">✦</span>AI Studio</button>
+      <button class="nav-btn" data-action="navigate" data-page="preview"><span class="nav-icon">▶</span>ライブプレビュー</button>
+      <button class="nav-btn" data-action="navigate" data-page="export"><span class="nav-icon">⇩</span>出力</button>
+      <button class="nav-btn" data-action="navigate" data-page="library"><span class="nav-icon">▣</span>保存一覧</button>
+      <button class="nav-btn" data-action="navigate" data-page="bank"><span class="nav-icon">▥</span>校内問題バンク</button>
+      <button class="nav-btn" data-action="navigate" data-page="collab"><span class="nav-icon">∞</span>共同編集</button>
+      <button class="nav-btn" data-action="navigate" data-page="deploy"><span class="nav-icon">◉</span>モード・接続</button>
+    </nav>
+    <div class="sidebar-foot">QuizCraft EDUは非公式の問題作成補助ツールです。Kahoot!との提携・承認を示すものではありません。<br><br>データはこのブラウザ内に保存されます。</div>
+  </aside>
+
+  <main class="main">
+    <header class="topbar">
+      <div style="display:flex;align-items:center;gap:12px">
+        <button class="mobile-menu" data-action="toggle-menu" aria-label="メニューを開く">☰</button>
+        <div><div class="page-kicker" id="pageKicker">Dashboard</div><div class="top-title" id="pageTitle">ホーム</div></div>
+      </div>
+      <div class="top-actions">
+        <div class="autosave"><span class="autosave-dot"></span><span id="saveStatus">自動保存済み</span></div>
+        <button class="btn btn-paper btn-small" data-action="new-project">新規</button>
+        <button class="btn btn-dark btn-small" data-action="save-project">プロジェクト保存</button>
+      </div>
+    </header>
+
+    <div class="content">
+      <section class="page active" id="page-dashboard">
+        <div class="hero">
+          <div class="hero-copy">
+            <span class="eyebrow">INGEST → DESIGN → ALIGN → ANALYZE → SHARE</span>
+            <h1>授業の「伝わった？」を、
+美しいクイズに変える。</h1>
+            <p>PDF・Word・PowerPoint・画像から教材を取り込み、評価観点と結び付け、誤答から次の問いを設計。ローカル作業と、先生個人のGoogle AI Studio APIキーを使うGemini連携を切り替えられる、授業クイズ制作環境です。</p>
+            <div class="hero-actions">
+              <button class="btn btn-primary" data-action="navigate" data-page="source">資料から作り始める</button>
+              <button class="btn btn-paper" data-action="load-demo">サンプルで試す</button>
+            </div>
+          </div>
+          <aside class="hero-note" aria-label="安全設計の特徴">
+            <h3>Craft with confidence.</h3>
+            <div class="check-list">
+              <div class="check-item"><span class="check-mark">✓</span><span>ボタン処理を一か所に集約</span></div>
+              <div class="check-item"><span class="check-mark">✓</span><span>入力値をそのままHTMLとして実行しない</span></div>
+              <div class="check-item"><span class="check-mark">✓</span><span>ローカル／接続モードを明確に分離</span></div>
+              <div class="check-item"><span class="check-mark">✓</span><span>問題バンク・履歴・共有パックに対応</span></div>
+            </div>
+          </aside>
+        </div>
+
+        <div class="capability-band mt-2">
+          <div class="mode-orb"><span id="dashModeIcon">◉</span></div><div><small>ACTIVE WORKSPACE</small><strong id="dashModeName">完全ローカルモード</strong><p id="dashModeText">教材と問題データを外部送信せず、このブラウザ内で処理します。</p></div>
+          <div class="capability-pills"><span>DOCX</span><span>PPTX</span><span>PDF*</span><span>OCR*</span><span>GEMINI*</span><span>SYNC*</span></div><button class="btn btn-paper btn-small" data-action="navigate" data-page="deploy">モード設定</button>
+        </div>
+        <div class="section-head"><div><h2>現在のプロジェクト</h2><p id="dashboardProjectName">名称未設定のクイズ</p></div><span class="stamp" id="dashboardStamp">作成中</span></div>
+        <div class="grid grid-4">
+          <div class="stat" style="--tint:var(--blue-soft)"><div class="stat-label">問題数</div><div class="stat-value" id="statQuestions">0</div><div class="stat-sub">最大30問を推奨</div></div>
+          <div class="stat" style="--tint:var(--green-soft)"><div class="stat-label">承認済み</div><div class="stat-value" id="statApproved">0</div><div class="stat-sub">先生が確認した問題</div></div>
+          <div class="stat" style="--tint:var(--yellow-soft)"><div class="stat-label">品質スコア</div><div class="stat-value" id="statScore">—</div><div class="stat-sub">自動チェック結果</div></div>
+          <div class="stat" style="--tint:var(--red-soft)"><div class="stat-label">要修正</div><div class="stat-value" id="statIssues">0</div><div class="stat-sub">エラー・注意の合計</div></div>
+        </div>
+
+        <div class="section-head"><div><h2>作成の流れ</h2><p>左から順に進めれば完成します。</p></div></div>
+        <div class="grid grid-3">
+          <article class="card"><div class="card-title"><h3><span class="step-chip">1</span>資料を入れる</h3></div><p class="muted small">文章を貼り付けるか、TXT・CSV・Markdown・HTMLファイルを読み込みます。PDFなどは文字をコピーして利用できます。</p><button class="btn btn-soft btn-small mt-1" data-action="navigate" data-page="source">資料画面へ</button></article>
+          <article class="card"><div class="card-title"><h3><span class="step-chip">2</span>生成・編集する</h3></div><p class="muted small">定義、年代、数値、重要語句を見つけ、四択問題を作ります。正解・誤答・出典を自由に直せます。</p><button class="btn btn-soft btn-small mt-1" data-action="navigate" data-page="questions">問題画面へ</button></article>
+          <article class="card"><div class="card-title"><h3><span class="step-chip">3</span>点検・出力する</h3></div><p class="muted small">Kahoot!の文字数・時間制限や、重複・曖昧さ・正解位置の偏りを確認して出力します。</p><button class="btn btn-soft btn-small mt-1" data-action="navigate" data-page="quality">点検画面へ</button></article>
+        </div>
+      </section>
+
+      <section class="page" id="page-source">
+        <div class="section-head"><div><h2>資料と生成設定</h2><p>授業に合わせた条件と、問題の根拠になる文章を設定します。</p></div><div class="toolbar no-print"><button class="btn btn-paper btn-small" data-action="load-demo">サンプル読込</button><button class="btn btn-primary btn-small" data-action="generate">問題を生成</button></div></div>
+        <div class="preset-ribbon no-print" aria-label="クイックプリセット">
+          <div><span class="preset-label">QUICK START</span><strong>授業シーンから設定</strong></div>
+          <button class="preset-btn" data-action="apply-preset" data-preset="warmup"><span>⚡</span><b>導入5問</b><small>テンポ重視・基礎</small></button>
+          <button class="preset-btn" data-action="apply-preset" data-preset="review"><span>↻</span><b>復習10問</b><small>標準・バランス</small></button>
+          <button class="preset-btn" data-action="apply-preset" data-preset="exam"><span>◎</span><b>テスト前15問</b><small>混合・じっくり</small></button>
+        </div>
+        <div class="grid grid-2">
+          <article class="card">
+            <div class="card-title"><h3><span class="step-chip">A</span>授業設定</h3></div>
+            <div class="form-grid">
+              <div class="field wide"><label for="quizTitle">クイズ名</label><input id="quizTitle" data-bind="meta.title" type="text" maxlength="100" placeholder="例：中2理科 光合成の確認"></div>
+              <div class="field third"><label for="schoolType">学校種</label><select id="schoolType" data-bind="meta.school"><option>小学校</option><option selected>中学校</option><option>高等学校</option><option>特別支援学校</option><option>その他</option></select></div>
+              <div class="field third"><label for="grade">学年</label><select id="grade" data-bind="meta.grade"><option>1年</option><option selected>2年</option><option>3年</option><option>4年</option><option>5年</option><option>6年</option><option>混合</option></select></div>
+              <div class="field third"><label for="subject">教科</label><select id="subject" data-bind="meta.subject"><option>国語</option><option>社会</option><option selected>理科</option><option>算数・数学</option><option>英語</option><option>情報</option><option>保健体育</option><option>音楽</option><option>美術</option><option>技術・家庭</option><option>道徳</option><option>総合</option><option>その他</option></select></div>
+              <div class="field"><label for="unit">単元</label><input id="unit" data-bind="meta.unit" type="text" placeholder="例：植物の体のつくりとはたらき"></div>
+              <div class="field"><label for="purpose">利用場面</label><select id="purpose" data-bind="meta.purpose"><option>授業前の導入</option><option selected>授業後の確認</option><option>既習事項の復習</option><option>定期テスト対策</option><option>レクリエーション</option></select></div>
+              <div class="field third"><label for="questionCount">生成問題数</label><input id="questionCount" data-bind="generator.count" type="number" min="1" max="30" value="10"></div>
+              <div class="field third"><label for="difficulty">難易度</label><select id="difficulty" data-bind="generator.difficulty"><option>基礎</option><option selected>標準</option><option>発展</option><option>混合</option></select></div>
+              <div class="field third"><label for="defaultTime">基本制限時間</label><select id="defaultTime" data-bind="generator.time"><option>5</option><option>10</option><option selected>20</option><option>30</option><option>60</option><option>120</option></select></div>
+              <div class="field wide"><span class="label">出題方法</span><div class="segmented">
+                <label><input type="checkbox" data-gen-type="definition" checked><span>定義・説明</span></label>
+                <label><input type="checkbox" data-gen-type="cloze" checked><span>空欄補充</span></label>
+                <label><input type="checkbox" data-gen-type="number" checked><span>年代・数値</span></label>
+                <label><input type="checkbox" data-gen-type="truefalse" checked><span>正誤</span></label>
+              </div></div>
+            </div>
+          </article>
+
+          <article class="card">
+            <div class="card-title"><h3><span class="step-chip">B</span>資料情報</h3></div>
+            <div class="form-grid">
+              <div class="field"><label for="sourceTitle">資料名</label><input id="sourceTitle" data-bind="meta.sourceTitle" type="text" placeholder="例：教科書42～45ページ"></div>
+              <div class="field"><label for="sourceType">資料種別</label><select id="sourceType" data-bind="meta.sourceType"><option>教科書</option><option>授業プリント</option><option>スライド</option><option>Webページ</option><option>動画の文字起こし</option><option>自作メモ</option><option>その他</option></select></div>
+              <div class="field wide"><label for="sourceUrl">参照URL（任意）</label><input id="sourceUrl" data-bind="meta.sourceUrl" type="url" placeholder="https://..."><div class="help">安全性とブラウザ制限を考慮し、URLからの自動取得は行いません。本文を貼り付けてください。</div></div>
+              <div class="field wide">
+                <div class="upload-zone" id="uploadZone"><span class="upload-icon">⇧</span><strong>テキスト系ファイルを読み込む</strong><div class="help">TXT・MD・CSV・TSV・HTML・JSONに対応</div><button type="button" class="btn btn-paper btn-small mt-1" data-action="choose-file">ファイルを選ぶ</button><input id="sourceFile" type="file" accept=".txt,.md,.csv,.tsv,.html,.htm,.json,text/*"></div>
+              </div>
+            </div>
+          </article>
+        </div>
+
+        <article class="card mt-2">
+          <div class="card-title"><h3><span class="step-chip">C</span>資料本文</h3><div class="toolbar"><button class="btn btn-paper btn-small" data-action="clean-source">文章を整える</button><button class="btn btn-paper btn-small" data-action="clear-source">本文を消去</button></div></div>
+          <textarea class="source-text" id="sourceText" data-bind="meta.sourceText" placeholder="ここに教科書・プリント・授業メモなどの文章を貼り付けてください。\n\n例：光合成とは、植物が光のエネルギーを使って二酸化炭素と水からデンプンなどの養分をつくるはたらきである。"></textarea>
+          <div class="source-insights">
+            <div class="insight"><strong id="insightChars">0</strong><span>文字</span></div>
+            <div class="insight"><strong id="insightSentences">0</strong><span>文・項目</span></div>
+            <div class="insight"><strong id="insightKeywords">0</strong><span>重要語候補</span></div>
+          </div>
+          <div class="notice notice-info mt-2"><span>ⓘ</span><span>PDF・Word・PowerPointは、対象箇所の文字をコピーして貼り付ける方法が最も安定します。スキャン画像は端末のOCR機能などで文字化してから利用してください。</span></div>
+          <div class="right mt-2"><button class="btn btn-primary" data-action="generate">この資料から問題を生成</button></div>
+        </article>
+      </section>
+
+
+      <section class="page" id="page-documents">
+        <div class="section-head"><div><h2>Document Lab</h2><p>PDF・Word・PowerPoint・画像を読み取り、使う範囲だけを教材本文へ送ります。</p></div><span class="lab-status" id="labModuleStatus">LOCAL CORE</span></div>
+        <div class="document-drop" id="documentDrop">
+          <input id="documentFile" type="file" class="hidden" accept=".pdf,.docx,.pptx,.txt,.md,.csv,.html,.htm,image/*">
+          <div class="doc-orbit"><span>＋</span><i>PDF</i><i>DOCX</i><i>PPTX</i><i>OCR</i></div>
+          <div><h3>教材ファイルをここへ</h3><p>ドラッグ＆ドロップ、またはファイルを選択してください。</p><button class="btn btn-primary" data-action="choose-document">教材を選ぶ</button></div>
+        </div>
+        <div class="grid grid-2 mt-2">
+          <article class="card">
+            <div class="card-title"><h3>読み取り設定</h3><span class="badge" id="docFileBadge">未選択</span></div>
+            <div class="form-grid">
+              <div class="field"><label for="docRange">ページ／スライド範囲</label><input id="docRange" type="text" placeholder="例：1-5, 8, 10-12"><div class="help">空欄なら全範囲。PDFはページ、PowerPointはスライドを指定します。</div></div>
+              <div class="field"><label for="ocrLanguage">OCR言語</label><select id="ocrLanguage"><option value="jpn+eng">日本語＋英語</option><option value="jpn">日本語</option><option value="eng">英語</option></select></div>
+              <div class="field wide"><span class="label">処理方法</span><div class="mode-choice"><label><input type="radio" name="docMode" value="auto" checked><span><b>自動判定</b><small>形式に合わせて最適な方法を選択</small></span></label><label><input type="radio" name="docMode" value="ocr"><span><b>画像OCR</b><small>画像・スキャンPDF向け</small></span></label></div></div>
+            </div>
+            <div class="document-actions mt-2"><button class="btn btn-dark" data-action="analyze-document">直接解析する</button><button class="btn btn-paper" data-action="clear-document">クリア</button></div>
+            <div class="process-box mt-2"><div class="process-line"><span id="docProcessLabel">ファイルを選んでください</span><strong id="docProcessPercent">0%</strong></div><div class="progress-track"><div class="progress-fill" id="docProgress"></div></div></div>
+          </article>
+          <article class="card">
+            <div class="card-title"><h3>解析結果</h3><div class="toolbar"><button class="btn btn-paper btn-small" data-action="copy-extracted">コピー</button><button class="btn btn-soft btn-small" data-action="use-extracted">教材本文に設定</button></div></div>
+            <textarea id="extractedText" class="document-result" placeholder="抽出された文章がここに表示されます。"></textarea>
+            <div class="document-stats"><div><strong id="docChars">0</strong><span>文字</span></div><div><strong id="docUnits">0</strong><span>ページ／スライド</span></div><div><strong id="docMethod">—</strong><span>解析方法</span></div></div>
+          </article>
+        </div>
+        <div class="grid grid-3 mt-2">
+          <div class="support-tile ready"><b>Word .docx</b><span>ブラウザ内で文書XMLを直接展開</span><small>LOCAL</small></div>
+          <div class="support-tile ready"><b>PowerPoint .pptx</b><span>スライド範囲を指定して文章抽出</span><small>LOCAL</small></div>
+          <div class="support-tile connected"><b>PDF・画像OCR</b><span>接続モードで解析エンジンを必要時だけ読込</span><small>CONNECTED</small></div>
+        </div>
+        <div class="notice notice-warn mt-2"><span>!</span><span>パスワード保護されたファイル、複雑な図表、縦書き、数式は正確に抽出できない場合があります。必ず元教材と照合してください。</span></div>
+      </section>
+
+      <section class="page" id="page-questions">
+        <div class="section-head"><div><h2>問題編集</h2><p>生成された問題を、先生の目で確認して仕上げます。</p></div><div class="toolbar no-print"><button class="btn btn-paper btn-small" data-action="add-question">＋ 手動追加</button><button class="btn btn-primary btn-small" data-action="run-quality">品質チェック</button></div></div>
+        <div class="smart-toolbar no-print">
+          <div><span class="smart-spark">✦</span><strong>Smart polish</strong><small>問題全体を一括で整えます</small></div>
+          <button class="btn btn-paper btn-small" data-action="approve-all">全問承認</button>
+          <button class="btn btn-paper btn-small" data-action="shuffle-all">選択肢をシャッフル</button>
+          <button class="btn btn-paper btn-small" data-action="balance-answers">正解位置を均等化</button>
+          <button class="btn btn-soft btn-small" data-action="normalize-times">時間を最適化</button>
+        </div>
+        <div class="filterbar">
+          <div class="toolbar"><input class="search" id="questionSearch" type="text" placeholder="問題文・選択肢を検索"><select id="questionFilter"><option value="all">すべて</option><option value="approved">承認済み</option><option value="unapproved">未承認</option><option value="issue">要確認</option></select></div>
+          <div class="small muted"><span id="questionVisibleCount">0</span>問を表示</div>
+        </div>
+        <div id="questionList" class="question-list"></div>
+      </section>
+
+      <section class="page" id="page-quality">
+        <div class="section-head"><div><h2>品質チェック</h2><p>正解の保証ではなく、先生が確認すべき箇所を見つけるための点検です。</p></div><button class="btn btn-primary no-print" data-action="run-quality">再チェック</button></div>
+        <div class="grid grid-2">
+          <article class="card">
+            <div class="quality-score">
+              <div class="score-ring" id="scoreRing"><div class="score-content"><div class="score-num" id="qualityScore">0</div><div class="score-label">品質スコア</div></div></div>
+              <div><h3 id="qualityHeadline">まだ問題がありません</h3><p class="muted small" id="qualitySummary">資料から問題を生成するか、手動で追加してください。</p><div class="quality-bars mt-2">
+                <div class="quality-row"><span>必須項目</span><div class="mini-track"><div class="mini-fill" id="barRequired" style="width:0;background:var(--green)"></div></div><strong id="valRequired">0%</strong></div>
+                <div class="quality-row"><span>文字数</span><div class="mini-track"><div class="mini-fill" id="barLength" style="width:0;background:var(--blue)"></div></div><strong id="valLength">0%</strong></div>
+                <div class="quality-row"><span>出典</span><div class="mini-track"><div class="mini-fill" id="barSource" style="width:0;background:#b88d20"></div></div><strong id="valSource">0%</strong></div>
+              </div></div>
+            </div>
+          </article>
+          <article class="card"><div class="card-title"><h3>チェック内容</h3></div><div class="check-list small">
+            <div class="check-item"><span class="check-mark">✓</span><span>問題文95文字・選択肢60文字以内</span></div>
+            <div class="check-item"><span class="check-mark">✓</span><span>選択肢2～4個、正解指定、重複なし</span></div>
+            <div class="check-item"><span class="check-mark">✓</span><span>問題の重複、曖昧表現、出典不足</span></div>
+            <div class="check-item"><span class="check-mark">✓</span><span>正解位置・制限時間の妥当性</span></div>
+            <div class="check-item"><span class="check-mark">✓</span><span>汎用的すぎる誤答選択肢</span></div>
+          </div><div class="notice notice-warn mt-2"><span>!</span><span>自動生成された内容は必ず原資料と照合してください。とくに固有名詞、年代、数値、否定表現は重点確認がおすすめです。</span></div></article>
+        </div>
+        <article class="card mt-2"><div class="card-title"><h3>検出結果</h3><span class="badge" id="issueCountBadge">0件</span></div><div id="issueList" class="issue-list"></div></article>
+      </section>
+
+
+
+      <section class="page" id="page-curriculum">
+        <div class="section-head"><div><h2>指導要領・評価デザイン</h2><p>問題を資質・能力の三つの柱と評価観点に関連付けます。</p></div><div class="toolbar"><button class="btn btn-paper btn-small" data-action="auto-map-curriculum">自動関連付け</button><button class="btn btn-primary btn-small" data-action="export-curriculum">対応表CSV</button></div></div>
+        <div class="perspective-grid">
+          <article class="perspective knowledge"><span>01</span><h3>知識・技能</h3><p>用語、事実、技能、手順を理解し活用できるか。</p><strong id="currKnowledgeCount">0問</strong></article>
+          <article class="perspective thinking"><span>02</span><h3>思考・判断・表現</h3><p>比較、理由付け、資料解釈、説明につながる問い。</p><strong id="currThinkingCount">0問</strong></article>
+          <article class="perspective attitude"><span>03</span><h3>主体的に学習に取り組む態度</h3><p>振り返りや選択理由など、学び方を捉える補助設計。</p><strong id="currAttitudeCount">0問</strong></article>
+        </div>
+        <div class="grid grid-2 mt-2">
+          <article class="card"><div class="card-title"><h3>単元目標メモ</h3><span class="badge">Project goals</span></div><div class="field"><label for="goalKnowledge">知識・技能</label><textarea id="goalKnowledge" data-curriculum="knowledge" placeholder="単元で身に付けさせたい知識・技能"></textarea></div><div class="field mt-1"><label for="goalThinking">思考・判断・表現</label><textarea id="goalThinking" data-curriculum="thinking" placeholder="比較・分析・説明などの目標"></textarea></div><div class="field mt-1"><label for="goalAttitude">主体的に学習に取り組む態度</label><textarea id="goalAttitude" data-curriculum="attitude" placeholder="振り返りや学習調整に関する目標"></textarea></div></article>
+          <article class="card"><div class="card-title"><h3>評価設計サマリー</h3><span class="badge" id="currMappedBadge">0 / 0</span></div><div id="curriculumSummary" class="curriculum-summary"></div><div class="notice notice-info mt-2"><span>ⓘ</span><span>四択クイズだけで「主体的に学習に取り組む態度」を直接評価するのは難しいため、振り返り課題などとの組み合わせを前提に表示します。</span></div></article>
+        </div>
+        <article class="card mt-2"><div class="card-title"><h3>問題との対応付け</h3><span class="badge">Question alignment</span></div><div id="curriculumMap" class="mapping-table"></div></article>
+      </section>
+
+      <section class="page" id="page-insights">
+        <div class="section-head"><div><h2>誤答インサイト</h2><p>回答データを読み込み、つまずきと次回の問いを見つけます。</p></div><div class="toolbar"><button class="btn btn-paper btn-small" data-action="load-result-demo">分析サンプル</button><button class="btn btn-primary btn-small" data-action="choose-results">回答データ読込</button><input id="resultsFile" type="file" class="hidden" accept=".csv,.tsv,.json,text/csv,application/json"></div></div>
+        <div class="result-format">
+          <div><span class="format-icon">CSV</span><p><b>縦型データ</b><br>student, question, selected, correct</p></div><div><span class="format-icon">JSON</span><p><b>回答配列</b><br>問題番号・選択肢番号・正誤</p></div><button class="btn btn-paper btn-small" data-action="export-result-template">入力テンプレート</button>
+        </div>
+        <div class="grid grid-4 mt-2">
+          <div class="metric-card violet"><span>回答件数</span><strong id="resultAttempts">0</strong><small>attempts</small></div>
+          <div class="metric-card mint"><span>平均正答率</span><strong id="resultAccuracy">—</strong><small>accuracy</small></div>
+          <div class="metric-card coral"><span>要復習問題</span><strong id="resultReview">0</strong><small>below 60%</small></div>
+          <div class="metric-card amber"><span>回答者</span><strong id="resultStudents">0</strong><small>learners</small></div>
+        </div>
+        <div class="grid grid-2 mt-2">
+          <article class="card"><div class="card-title"><h3>問題別正答率</h3><span class="badge">Performance</span></div><div id="performanceChart" class="performance-list"></div></article>
+          <article class="card"><div class="card-title"><h3>次回問題の提案</h3><span class="badge">Next question</span></div><div id="nextQuestionTips" class="next-tips"></div></article>
+        </div>
+        <article class="card mt-2"><div class="card-title"><h3>誤答選択肢の傾向</h3><span class="badge" id="resultSourceBadge">データ未読込</span></div><div id="distractorInsights" class="distractor-grid"></div></article>
+      </section>
+
+      <section class="page" id="page-analytics">
+        <div class="section-head"><div><h2>クイズ構成分析</h2><p>問題セット全体を俯瞰し、授業で使いやすいバランスに整えます。</p></div><button class="btn btn-primary no-print" data-action="navigate" data-page="questions">問題を調整</button></div>
+        <div class="analytics-hero">
+          <div><span class="analytics-kicker">QUIZ BLUEPRINT</span><h3 id="analyticsTitle">名称未設定のクイズ</h3><p id="analyticsNarrative">問題を追加すると、難易度・出題形式・正解位置・時間配分を分析します。</p></div>
+          <div class="radar-orbit" aria-hidden="true"><span>Q</span><i></i><b></b></div>
+        </div>
+        <div class="grid grid-4 mt-2">
+          <div class="metric-card coral"><span>問題数</span><strong id="anaCount">0</strong><small>questions</small></div>
+          <div class="metric-card violet"><span>予想プレイ時間</span><strong id="anaTime">0分</strong><small>including transitions</small></div>
+          <div class="metric-card mint"><span>出題形式</span><strong id="anaTypes">0</strong><small>question styles</small></div>
+          <div class="metric-card amber"><span>承認率</span><strong id="anaApproval">0%</strong><small>teacher reviewed</small></div>
+        </div>
+        <div class="grid grid-2 mt-2">
+          <article class="card chart-card"><div class="card-title"><h3>難易度バランス</h3><span class="badge">Difficulty mix</span></div><div id="difficultyChart" class="donut-layout"></div></article>
+          <article class="card chart-card"><div class="card-title"><h3>正解位置の分布</h3><span class="badge">Answer position</span></div><div id="answerChart" class="bar-chart"></div><div class="right mt-2"><button class="btn btn-soft btn-small no-print" data-action="balance-answers">位置を均等化</button></div></article>
+          <article class="card chart-card"><div class="card-title"><h3>出題形式</h3><span class="badge">Learning design</span></div><div id="objectiveChart" class="tag-cloud"></div></article>
+          <article class="card chart-card"><div class="card-title"><h3>改善レコメンド</h3><span class="badge">Craft notes</span></div><div id="analyticsTips" class="recommend-list"></div></article>
+        </div>
+      </section>
+
+      <section class="page" id="page-studio">
+        <div class="section-head"><div><h2>AI Studio</h2><p>先生ご自身のGoogle AI Studio APIキーでGeminiへ直接依頼できます。コピー＆ペースト方式も残しています。</p></div><span class="studio-badge">GEMINI DIRECT</span></div>
+        <div class="gemini-connect" id="geminiConnectPanel">
+          <div class="gemini-symbol">G</div>
+          <div class="gemini-key-field"><label for="studioGeminiKey">Google AI Studio APIキー</label><div class="secret-input"><input id="studioGeminiKey" type="password" autocomplete="off" spellcheck="false" placeholder="AIza...（アプリやプロジェクトには保存されません）"><button class="secret-toggle" data-action="toggle-gemini-key" data-target="studioGeminiKey" type="button">表示</button></div></div>
+          <div><label for="studioGeminiModel">利用モデル</label><select id="studioGeminiModel" data-gemini-model><option value="gemini-3.6-flash">Gemini 3.6 Flash（安定）</option><option value="gemini-3.7-flash">Gemini 3.7 Flash</option><option value="gemini-3.5-flash-lite">Gemini 3.5 Flash-Lite</option></select></div>
+          <button class="btn btn-paper btn-small" data-action="test-gemini">接続確認</button>
+          <div class="gemini-status" id="studioGeminiStatus"><span></span><b>未接続</b><small>キーはこのページのメモリ内だけ</small></div>
+          <label class="session-remember"><input id="rememberGeminiSession" type="checkbox"> 再読み込み後もこのタブ内で保持</label>
+        </div>
+        <div class="studio-flow">
+          <article class="studio-step"><span class="flow-no">01</span><div><h3>プロンプトを作る</h3><p>現在の教材・学年・教科・Kahoot!制限をまとめた指示文を自動作成します。</p></div></article>
+          <span class="flow-arrow">→</span>
+          <article class="studio-step"><span class="flow-no">02</span><div><h3>Geminiへ送る</h3><p>直接生成、またはプロンプトをコピーしてGoogle AI Studioで実行します。</p></div></article>
+          <span class="flow-arrow">→</span>
+          <article class="studio-step"><span class="flow-no">03</span><div><h3>戻して検査する</h3><p>結果を読み込み、QuizCraft EDUの品質チェックで仕上げます。</p></div></article>
+        </div>
+        <div class="grid grid-2 mt-2">
+          <article class="card studio-card">
+            <div class="card-title"><h3>AIへの依頼文</h3><div class="toolbar"><button class="btn btn-paper btn-small" data-action="refresh-prompt">更新</button><button class="btn btn-paper btn-small" data-action="copy-ai-prompt">コピー</button><button class="btn btn-primary btn-small" id="geminiGenerateButton" data-action="gemini-generate">Geminiで問題生成</button></div></div>
+            <textarea id="aiPrompt" class="studio-textarea" readonly></textarea>
+            <div class="notice notice-info mt-2"><span>ⓘ</span><span>直接生成を押すと、表示中の依頼文と教材本文がGoogle Gemini APIへ送信されます。氏名などの個人情報は含めないでください。</span></div>
+          </article>
+          <article class="card studio-card">
+            <div class="card-title"><h3>AIのJSON回答</h3><button class="btn btn-paper btn-small" data-action="load-ai-sample">形式見本</button></div>
+            <textarea id="aiJson" class="studio-textarea" placeholder='[{"text":"問題文","options":["選択肢1","選択肢2","選択肢3","選択肢4"],"correct":0,"sourceExcerpt":"根拠"}]'></textarea>
+            <div class="ai-import-options mt-2"><label><input type="radio" name="aiImportMode" value="append" checked> 現在の問題に追加</label><label><input type="radio" name="aiImportMode" value="replace"> 現在の問題と置換</label></div>
+            <button class="btn btn-dark mt-2" data-action="import-ai-json">JSONを検査して読み込む</button>
+          </article>
+        </div>
+      </section>
+
+      <section class="page" id="page-preview">
+        <div class="section-head"><div><h2>ライブプレビュー</h2><p>教室で投影したときのテンポと見え方を確認できます。</p></div><div class="toolbar no-print"><button class="btn btn-paper btn-small" data-action="preview-fullscreen">全画面表示</button><button class="btn btn-primary btn-small" data-action="navigate" data-page="questions">問題を編集</button></div></div>
+        <div class="preview-stage" id="previewStage">
+          <div class="preview-top"><div><span class="preview-brand">QUIZCRAFT <b>EDU</b></span><h3 id="previewQuizTitle">クイズタイトル</h3></div><div class="preview-progress"><strong id="previewNumber">0 / 0</strong><div class="preview-track"><span id="previewProgressBar"></span></div></div></div>
+          <div id="previewEmpty" class="preview-empty"><span>▶</span><h3>プレビューする問題がありません</h3><p>問題を生成または追加してください。</p></div>
+          <div id="previewContent" class="hidden">
+            <div class="preview-question" id="previewQuestion">問題文</div>
+            <div class="preview-options" id="previewOptions"></div>
+            <div class="preview-source" id="previewSource"></div>
+          </div>
+          <div class="preview-controls no-print"><button class="preview-nav" data-action="preview-prev">←</button><button class="preview-reveal" data-action="preview-reveal" id="previewReveal">正解を表示</button><button class="preview-nav" data-action="preview-next">→</button></div>
+        </div>
+        <div class="notice notice-info mt-2"><span>TIP</span><span>矢印キーで前後移動、スペースキーで正解表示ができます。実際のKahoot!画面を再現するものではなく、問題文と選択肢の視認性確認用です。</span></div>
+      </section>
+
+      <section class="page" id="page-export">
+        <div class="section-head"><div><h2>出力</h2><p>目的に合わせてデータを持ち出します。出力前に品質チェックをおすすめします。</p></div><button class="btn btn-dark no-print" data-action="save-project">プロジェクト保存</button></div>
+        <div class="notice notice-info"><span>ⓘ</span><span>Kahoot!向けデータは、問題文95文字、選択肢60文字、制限時間5・10・20・30・60・120秒の範囲で出力します。公式テンプレートへの貼り付け用TSVも用意しています。</span></div>
+        <div class="grid grid-2 mt-2">
+          <div class="export-card"><div class="export-icon">X</div><div><h3>Kahoot!向けExcel（.xlsx）</h3><p>ブラウザだけで生成するExcelファイル。四択問題をまとめて出力します。</p></div><button class="btn btn-primary btn-small" data-action="export-xlsx">出力</button></div>
+          <div class="export-card"><div class="export-icon">▦</div><div><h3>公式テンプレート貼り付け用</h3><p>タブ区切りデータをコピー。公式テンプレートの先頭データ行に貼り付けます。</p></div><button class="btn btn-dark btn-small" data-action="copy-tsv">コピー</button></div>
+          <div class="export-card"><div class="export-icon">C</div><div><h3>CSV</h3><p>ExcelやGoogleスプレッドシートで確認・編集しやすい形式です。</p></div><button class="btn btn-paper btn-small" data-action="export-csv">出力</button></div>
+          <div class="export-card"><div class="export-icon">{ }</div><div><h3>バックアップJSON</h3><p>問題、設定、出典を含む完全バックアップ。後から再読込できます。</p></div><button class="btn btn-paper btn-small" data-action="export-json">出力</button></div>
+          <div class="export-card"><div class="export-icon">⇧</div><div><h3>JSONを読み込む</h3><p>このアプリから出力したプロジェクトを復元します。</p></div><button class="btn btn-paper btn-small" data-action="choose-json">読込</button><input id="jsonFile" class="hidden" type="file" accept=".json,application/json"></div>
+          <div class="export-card"><div class="export-icon">▤</div><div><h3>印刷用問題・解答</h3><p>問題一覧と解答を別ページで開き、印刷またはPDF保存できます。</p></div><button class="btn btn-paper btn-small" data-action="print-quiz">開く</button></div>
+        </div>
+        <article class="card mt-2"><div class="card-title"><h3>出力前サマリー</h3><span class="stamp" id="exportStamp">未点検</span></div><div class="grid grid-4">
+          <div><div class="small muted">クイズ名</div><strong id="exportTitle">名称未設定</strong></div><div><div class="small muted">問題数</div><strong id="exportCount">0問</strong></div><div><div class="small muted">承認済み</div><strong id="exportApproved">0問</strong></div><div><div class="small muted">品質スコア</div><strong id="exportScore">—</strong></div>
+        </div></article>
+      </section>
+
+      <section class="page" id="page-library">
+        <div class="section-head"><div><h2>保存一覧</h2><p>このブラウザに保存したプロジェクトです。</p></div><button class="btn btn-primary no-print" data-action="save-project">現在の状態を保存</button></div>
+        <div class="notice notice-warn"><span>!</span><span>ブラウザのデータ削除や端末変更で消える場合があります。大切なプロジェクトはJSONでもバックアップしてください。</span></div>
+        <article class="card mt-2"><div class="card-title"><h3>保存プロジェクト</h3><span class="badge" id="projectCountBadge">0件</span></div><div id="projectList" class="project-list"></div></article>
+      </section>
+
+      <section class="page" id="page-bank">
+        <div class="section-head"><div><h2>校内問題バンク</h2><p>良問を教科・学年・単元・タグ付きで再利用し、共有パックとして受け渡します。</p></div><div class="toolbar"><button class="btn btn-paper btn-small" data-action="bank-save-approved">承認済みを登録</button><button class="btn btn-primary btn-small" data-action="bank-save-all">全問題を登録</button></div></div>
+        <div class="bank-toolbar"><input id="bankSearch" type="text" placeholder="問題文・単元・タグを検索"><select id="bankSubject"><option value="all">全教科</option></select><select id="bankGrade"><option value="all">全学年</option></select><button class="btn btn-paper btn-small" data-action="bank-export">共有パック出力</button><button class="btn btn-paper btn-small" data-action="choose-bank-pack">共有パック読込</button><input id="bankPackFile" class="hidden" type="file" accept=".json,.qcepack,application/json"></div>
+        <div class="bank-summary"><div><strong id="bankCount">0</strong><span>登録問題</span></div><div><strong id="bankSubjects">0</strong><span>教科</span></div><div><strong id="bankSelected">0</strong><span>選択中</span></div><button class="btn btn-dark" data-action="bank-insert-selected">選択問題を現在のクイズへ</button></div>
+        <div id="bankList" class="bank-grid"></div>
+      </section>
+
+      <section class="page" id="page-collab">
+        <div class="section-head"><div><h2>共同編集・履歴</h2><p>編集スナップショット、コメント、同一ブラウザ内のリアルタイム受け渡しをまとめます。</p></div><span class="collab-status" id="collabStatus">OFFLINE</span></div>
+        <div class="grid grid-2">
+          <article class="card"><div class="card-title"><h3>編集者とバージョン</h3><span class="badge">Version trail</span></div><div class="form-grid"><div class="field"><label for="teacherName">編集者名</label><input id="teacherName" type="text" placeholder="例：理科・山田"></div><div class="field"><label for="versionNote">変更メモ</label><input id="versionNote" type="text" placeholder="例：誤答選択肢を修正"></div></div><button class="btn btn-primary mt-2" data-action="create-version">スナップショットを保存</button><div id="versionList" class="version-list mt-2"></div></article>
+          <article class="card"><div class="card-title"><h3>レビューコメント</h3><span class="badge" id="commentCountBadge">0件</span></div><div class="comment-compose"><textarea id="commentText" placeholder="教材の根拠、表現、難易度などについてコメント"></textarea><button class="btn btn-dark" data-action="add-comment">コメント追加</button></div><div id="commentList" class="comment-list mt-2"></div></article>
+        </div>
+        <article class="card mt-2"><div class="card-title"><h3>ローカル共同編集ルーム</h3><span class="badge">BroadcastChannel</span></div><div class="room-layout"><div><label for="roomCode">ルームコード</label><input id="roomCode" type="text" placeholder="例：science-2a"><div class="help">同じブラウザプロファイルで開いた別タブ間の受け渡しです。端末間共有は「モード・接続」の同期サーバーを使います。</div></div><button class="btn btn-soft" data-action="connect-room">ルーム接続</button><button class="btn btn-paper" data-action="broadcast-project">現在版を送信</button></div><div id="remoteNotice" class="remote-notice hidden"><div><strong id="remoteTitle">共同編集版を受信</strong><p id="remoteDetail"></p></div><button class="btn btn-primary btn-small" data-action="accept-remote">受け入れる</button></div></article>
+      </section>
+
+      <section class="page" id="page-deploy">
+        <div class="section-head"><div><h2>モード・接続</h2><p>外部送信なしの完全ローカルと、先生個人のGemini APIキーを使う接続モードを明確に分離します。</p></div><span class="security-chip">PERSONAL KEY / SESSION ONLY</span></div>
+        <div class="mode-switcher">
+          <label><input type="radio" name="workspaceMode" value="local"><span><i>◉</i><b>完全ローカル</b><small>教材・問題を外部送信しない</small></span></label>
+          <label><input type="radio" name="workspaceMode" value="connected"><span><i>⌁</i><b>接続モード</b><small>PDF/OCR・個人Gemini API・任意同期</small></span></label>
+        </div>
+        <div class="grid grid-2 mt-2">
+          <article class="card"><div class="card-title"><h3>機能モジュール</h3><span class="badge" id="moduleModeBadge">LOCAL</span></div><div class="module-list">
+            <div><span class="module-dot local"></span><b>ルールベース問題生成</b><small>常時利用可能</small></div><div><span class="module-dot local"></span><b>DOCX / PPTX展開</b><small>対応ブラウザでローカル処理</small></div><div><span class="module-dot online"></span><b>PDF.jsテキスト抽出</b><small id="pdfModuleText">接続モードで読込</small></div><div><span class="module-dot online"></span><b>Tesseract OCR</b><small id="ocrModuleText">接続モードで読込</small></div><div><span class="module-dot online"></span><b>Google Gemini API</b><small>先生個人のAPIキーで直接接続</small></div>
+          </div><button class="btn btn-paper mt-2" data-action="test-document-modules">PDF・OCRモジュールをテスト</button></article>
+          <article class="card gemini-settings-card"><div class="card-title"><h3>個人用Google Gemini API</h3><span class="badge">Bring your own key</span></div>
+            <div class="gemini-brandline"><span class="gemini-symbol small-symbol">G</span><div><b>各先生が自分のキーで利用</b><p>Google AI Studioで取得したAPIキーを、必要なセッションだけ入力します。</p></div></div>
+            <div class="field mt-1"><label for="geminiApiKey">Google AI Studio APIキー</label><div class="secret-input"><input id="geminiApiKey" type="password" autocomplete="off" spellcheck="false" placeholder="AIza..."><button class="secret-toggle" data-action="toggle-gemini-key" data-target="geminiApiKey" type="button">表示</button></div></div>
+            <div class="field mt-1"><label for="geminiModel">Geminiモデル</label><select id="geminiModel" data-gemini-model><option value="gemini-3.6-flash">Gemini 3.6 Flash（安定）</option><option value="gemini-3.7-flash">Gemini 3.7 Flash</option><option value="gemini-3.5-flash-lite">Gemini 3.5 Flash-Lite</option></select><div class="help">接続確認をすると、キーで利用可能なgenerateContent対応モデルを取得します。</div></div>
+            <div class="toolbar mt-2"><button class="btn btn-primary" data-action="test-gemini">接続確認・モデル取得</button><button class="btn btn-paper" data-action="clear-gemini-key">キーを消去</button></div>
+            <div class="gemini-status mt-2" id="deployGeminiStatus"><span></span><b>未接続</b><small>APIキーはプロジェクト・JSON・localStorageに保存しません</small></div>
+            <label class="session-remember mt-2"><input id="rememberGeminiDeploy" type="checkbox"> 再読み込み後もこのタブ内で保持（sessionStorageのみ）</label>
+            <div class="notice notice-warn mt-2"><span>!</span><span>共有パソコンでは保持を選ばず、利用後に「キーを消去」してください。ブラウザ拡張機能や開発者ツールから見える可能性があるため、個人利用・試用向けの接続方式です。Google AI Studio側でGemini API専用の制限も設定してください。API利用料・利用上限はキーの所有者に適用されます。</span></div>
+          </article>
+          <article class="card"><div class="card-title"><h3>校内同期サーバー</h3><span class="badge">Optional backend</span></div><div class="field"><label for="syncUrl">同期URL</label><input id="syncUrl" data-config="syncUrl" type="url" placeholder="https://school.example/api/projects"></div><div class="field mt-1"><label for="syncProjectId">共有プロジェクトID</label><input id="syncProjectId" data-config="syncProjectId" type="text" placeholder="science-grade2"></div><div class="toolbar mt-2"><button class="btn btn-dark" data-action="sync-push">サーバーへ保存</button><button class="btn btn-paper" data-action="sync-pull">サーバーから取得</button></div><div id="syncStatus" class="sync-status mt-2">未接続</div></article>
+          <article class="card"><div class="card-title"><h3>サーバー実装仕様</h3><button class="btn btn-paper btn-small" data-action="copy-server-spec">仕様をコピー</button></div><div class="server-spec"><code>Gemini API</code><span>AI生成は先生個人のAPIキーで直接接続</span><code>PUT /api/projects/:id</code><span>プロジェクトJSONを保存</span><code>GET /api/projects/:id</code><span>最新プロジェクトJSONを返す</span></div><div class="notice notice-info mt-2"><span>ⓘ</span><span>校内同期を使わない場合、このサーバー設定は空欄のままで構いません。同期機能だけ任意のサーバーへ接続できます。</span></div></article>
+        </div>
+      </section>
+    </div>
+  </main>
+</div>
+
+<div class="modal-backdrop" id="confirmModal" role="dialog" aria-modal="true" aria-labelledby="modalTitle">
+  <div class="modal"><div class="modal-head"><h2 id="modalTitle">確認</h2><button class="btn btn-paper btn-icon" data-action="close-modal" aria-label="閉じる">×</button></div><p id="modalMessage"></p><div class="right mt-2"><button class="btn btn-paper" data-action="close-modal">キャンセル</button> <button class="btn btn-danger" id="modalConfirmButton" data-action="confirm-modal">実行する</button></div></div>
+</div>
+<div class="toast-wrap" id="toastWrap" aria-live="polite"></div>
+
+<script>
+(function(){
+  'use strict';
+
+  var STORAGE_CURRENT = 'monsaku_current_v1';
+  var STORAGE_PROJECTS = 'monsaku_projects_v1';
+  var STORAGE_BANK = 'quizcraft_bank_v1';
+  var documentFile = null;
+  var documentUnits = 0;
+  var bankSelection = new Set();
+  var collabChannel = null;
+  var pendingRemote = null;
+  var sessionSecrets = {geminiKey:''};
+  var allowedTimes = [5,10,20,30,60,120];
+  var pageLabels = {
+    dashboard:['Dashboard','ホーム'], source:['Source & setup','資料と設定'], documents:['Document Lab','Document Lab'], questions:['Question editor','問題編集'],
+    quality:['Quality check','品質チェック'], curriculum:['Curriculum alignment','指導要領・評価'], analytics:['Quiz blueprint','構成分析'], insights:['Learning analytics','誤答インサイト'], studio:['AI Studio','AI Studio'], preview:['Live preview','ライブプレビュー'], export:['Export','出力'], library:['Library','保存一覧'], bank:['School question bank','校内問題バンク'], collab:['Collaboration','共同編集'], deploy:['Workspace mode','モード・接続']
+  };
+  var modalCallback = null;
+  var saveTimer = null;
+  var lastQuality = null;
+  var previewIndex = 0;
+  var previewRevealed = false;
+
+  function defaultState(){
+    return {
+      version:1,
+      id:makeId('project'),
+      createdAt:new Date().toISOString(),
+      updatedAt:new Date().toISOString(),
+      meta:{title:'',school:'中学校',grade:'2年',subject:'理科',unit:'',purpose:'授業後の確認',sourceTitle:'',sourceType:'教科書',sourceUrl:'',sourceText:''},
+      generator:{count:10,difficulty:'標準',time:20,types:{definition:true,cloze:true,number:true,truefalse:true}},
+      curriculum:{goals:{knowledge:'',thinking:'',attitude:''}},
+      results:{records:[],source:''},
+      collaboration:{teacher:'',comments:[],versions:[]},
+      settings:{mode:'local',aiModel:'gemini-3.6-flash',syncUrl:'',syncProjectId:''},
+      questions:[]
+    };
+  }
+
+  var state = loadCurrent() || defaultState();
+  ensureExtendedState(state);
+
+  function ensureExtendedState(target){
+    target.curriculum=target.curriculum||{goals:{knowledge:'',thinking:'',attitude:''}};target.curriculum.goals=target.curriculum.goals||{knowledge:'',thinking:'',attitude:''};
+    target.results=target.results||{records:[],source:''};target.results.records=Array.isArray(target.results.records)?target.results.records:[];
+    target.collaboration=target.collaboration||{teacher:'',comments:[],versions:[]};target.collaboration.comments=Array.isArray(target.collaboration.comments)?target.collaboration.comments:[];target.collaboration.versions=Array.isArray(target.collaboration.versions)?target.collaboration.versions:[];
+    target.settings=Object.assign({mode:'local',aiModel:'gemini-3.6-flash',syncUrl:'',syncProjectId:''},target.settings||{});delete target.settings.aiProxyUrl;
+    (target.questions||[]).forEach(function(q){if(!q.standard)q.standard='';if(!q.assessment)q.assessment='確認';if(!q.tags)q.tags=[];});
+  }
+
+  function $(selector,root){return (root||document).querySelector(selector);}
+  function $$(selector,root){return Array.prototype.slice.call((root||document).querySelectorAll(selector));}
+  function makeId(prefix){return (prefix||'id')+'_'+Date.now().toString(36)+'_'+Math.random().toString(36).slice(2,8);}
+  function safeParse(text,fallback){try{return JSON.parse(text);}catch(e){return fallback;}}
+  function loadCurrent(){var raw=null;try{raw=localStorage.getItem(STORAGE_CURRENT);}catch(e){}var data=safeParse(raw,null);return data&&data.meta&&Array.isArray(data.questions)?data:null;}
+  function getProjects(){var raw=null;try{raw=localStorage.getItem(STORAGE_PROJECTS);}catch(e){}var list=safeParse(raw,[]);return Array.isArray(list)?list:[];}
+  function setProjects(list){try{localStorage.setItem(STORAGE_PROJECTS,JSON.stringify(list));return true;}catch(e){toast('保存領域に書き込めませんでした。JSONでバックアップしてください。','error');return false;}}
+  function clone(obj){return JSON.parse(JSON.stringify(obj));}
+  function clamp(n,min,max){n=Number(n);return Math.min(max,Math.max(min,isFinite(n)?n:min));}
+  function esc(value){return String(value==null?'':value).replace(/[&<>"']/g,function(ch){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[ch];});}
+  function xmlEsc(value){return String(value==null?'':value).replace(/[&<>"']/g,function(ch){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&apos;'}[ch];});}
+  function fileSafe(name){return String(name||'クイズ').replace(/[\\/:*?"<>|]/g,'_').replace(/\s+/g,'_').slice(0,60)||'クイズ';}
+  function formatDate(iso){var d=new Date(iso);if(isNaN(d.getTime()))return '';return d.toLocaleString('ja-JP',{year:'numeric',month:'2-digit',day:'2-digit',hour:'2-digit',minute:'2-digit'});}
+
+  function toast(message,type){
+    var wrap=$('#toastWrap');
+    var item=document.createElement('div');
+    item.className='toast '+(type||'');
+    item.textContent=message;
+    wrap.appendChild(item);
+    window.setTimeout(function(){if(item.parentNode)item.parentNode.removeChild(item);},3600);
+  }
+
+  function queueSave(){
+    $('#saveStatus').textContent='保存中…';
+    clearTimeout(saveTimer);
+    saveTimer=setTimeout(function(){
+      state.updatedAt=new Date().toISOString();
+      try{localStorage.setItem(STORAGE_CURRENT,JSON.stringify(state));$('#saveStatus').textContent='自動保存済み';}
+      catch(e){$('#saveStatus').textContent='保存できません';}
+      renderSummary();
+    },250);
+  }
+
+  function getPath(obj,path){return path.split('.').reduce(function(acc,key){return acc&&acc[key];},obj);}
+  function setPath(obj,path,value){var keys=path.split('.');var cur=obj;keys.slice(0,-1).forEach(function(k){if(!cur[k])cur[k]={};cur=cur[k];});cur[keys[keys.length-1]]=value;}
+
+  function syncFormFromState(){
+    $$('[data-bind]').forEach(function(el){var value=getPath(state,el.dataset.bind);if(value===undefined||value===null)return;if(el.type==='number')el.value=Number(value);else el.value=value;});
+    $$('[data-gen-type]').forEach(function(el){el.checked=state.generator.types[el.dataset.genType]!==false;});
+    updateSourceInsights();
+  }
+
+  function navigate(page){
+    if(!pageLabels[page])return;
+    $$('.page').forEach(function(el){el.classList.toggle('active',el.id==='page-'+page);});
+    $$('.nav-btn').forEach(function(el){el.classList.toggle('active',el.dataset.page===page);});
+    $('#pageKicker').textContent=pageLabels[page][0];
+    $('#pageTitle').textContent=pageLabels[page][1];
+    $('#sidebar').classList.remove('open');
+    if(page==='documents')renderDocumentLab();
+    if(page==='questions')renderQuestions();
+    if(page==='quality')runQuality(false);
+    if(page==='curriculum')renderCurriculum();
+    if(page==='analytics')renderAnalytics();
+    if(page==='insights')renderInsights();
+    if(page==='studio')renderStudio();
+    if(page==='preview')renderPreview();
+    if(page==='export')renderExport();
+    if(page==='library')renderProjects();
+    if(page==='bank')renderBank();
+    if(page==='collab')renderCollab();
+    if(page==='deploy')renderDeploy();
+    window.scrollTo({top:0,behavior:'smooth'});
+  }
+
+  function normalizeText(text){
+    return String(text||'').replace(/\r\n?/g,'\n').replace(/[\t　]+/g,' ').replace(/ +/g,' ').replace(/\n{3,}/g,'\n\n').replace(/ *([。！？]) */g,'$1\n').trim();
+  }
+
+  function splitSentences(text){
+    var normalized=normalizeText(text);
+    if(!normalized)return [];
+    return normalized.split(/\n+/).map(function(s){return s.trim();}).filter(function(s){return s.length>=4;}).reduce(function(all,line){
+      var parts=line.split(/(?<=[。！？!?])/).map(function(s){return s.trim();}).filter(function(s){return s.length>=4;});
+      return all.concat(parts.length?parts:[line]);
+    },[]).slice(0,500);
+  }
+
+  var stopWords=['これ','それ','ため','もの','こと','よう','ところ','場合','以下','以上','問題','資料','授業','学習','正しい','説明','内容','次の','どれ','について','として','そして','しかし','また','さらに','できる','行う','なる','ある','いる','する','される'];
+  function extractKeywords(text){
+    var found=[];
+    var patterns=[/[一-龠々〆ヵヶ]{2,12}/g,/[ァ-ヴー]{3,16}/g,/[A-Za-z][A-Za-z0-9 -]{2,24}/g];
+    patterns.forEach(function(re){var m;while((m=re.exec(text))!==null){var w=m[0].trim();if(stopWords.indexOf(w)<0&&!/^[年月日時分秒]+$/.test(w)&&found.indexOf(w)<0)found.push(w);if(found.length>=120)break;}});
+    return found;
+  }
+
+  function updateSourceInsights(){
+    var text=state.meta.sourceText||'';
+    $('#insightChars').textContent=text.length.toLocaleString('ja-JP');
+    $('#insightSentences').textContent=splitSentences(text).length;
+    $('#insightKeywords').textContent=extractKeywords(text).length;
+  }
+
+  function cleanSentence(s){return String(s||'').replace(/^[-・●■◆◇□▶▷※\d\.、\)）\s]+/,'').replace(/[。！？!?]+$/,'').trim();}
+  function shortText(text,max){var s=cleanSentence(text);return s.length>max?s.slice(0,max-1)+'…':s;}
+  function shuffle(arr){var a=arr.slice();for(var i=a.length-1;i>0;i--){var j=Math.floor(Math.random()*(i+1));var t=a[i];a[i]=a[j];a[j]=t;}return a;}
+  function uniqueStrings(arr){var seen={};return arr.map(function(x){return cleanSentence(x);}).filter(function(x){if(!x||seen[x])return false;seen[x]=true;return true;});}
+  function nearNumbers(value,unit){var n=Number(value);var delta=n>=1000?1:(n>=100?10:(n>=10?2:1));return uniqueStrings([n-delta,n+delta,n+delta*2].map(function(x){return String(Math.max(0,x))+unit;}));}
+
+  function makeOptions(correct,pool,numeric){
+    var wrong=[];
+    if(numeric){wrong=nearNumbers(numeric.value,numeric.unit);}
+    wrong=wrong.concat(pool||[]);
+    wrong=uniqueStrings(wrong).filter(function(x){return x!==cleanSentence(correct)&&x.length<=60;});
+    var fallbacks=['資料には記載されていない','別の内容を表している','この説明には当てはまらない'];
+    wrong=uniqueStrings(wrong.concat(fallbacks)).slice(0,3);
+    var opts=shuffle([shortText(correct,60)].concat(wrong));
+    return {options:opts,correct:[opts.indexOf(shortText(correct,60))]};
+  }
+
+  function parseFacts(sentences){
+    var facts=[];
+    sentences.forEach(function(raw,index){
+      var s=cleanSentence(raw);
+      if(s.length<4)return;
+      var colon=s.match(/^(.{1,35}?)[：:＝=](.{2,100})$/);
+      if(colon){facts.push({kind:'definition',subject:cleanSentence(colon[1]),predicate:cleanSentence(colon[2]),source:s,index:index});return;}
+      var def=s.match(/^(.{1,32}?)(?:とは|は)、?(.{3,120}?)(?:である|です|だ|をいう|という|と呼ばれる)$/);
+      if(def){facts.push({kind:'definition',subject:cleanSentence(def[1]),predicate:cleanSentence(def[2]),source:s,index:index});return;}
+      var year=s.match(/(\d{3,4})年/);
+      if(year){facts.push({kind:'number',value:year[1],unit:'年',source:s,index:index});return;}
+      var number=s.match(/(\d+(?:\.\d+)?)(％|%|個|人|本|枚|回|度|cm|mm|m|km|g|kg|秒|分|時間)/i);
+      if(number){facts.push({kind:'number',value:number[1],unit:number[2],source:s,index:index});return;}
+      facts.push({kind:'sentence',source:s,index:index});
+    });
+    return facts;
+  }
+
+  function buildCandidates(text){
+    var sentences=splitSentences(text);
+    var facts=parseFacts(sentences);
+    var keywords=extractKeywords(text);
+    var predicates=facts.filter(function(f){return f.predicate;}).map(function(f){return f.predicate;});
+    var subjects=facts.filter(function(f){return f.subject;}).map(function(f){return f.subject;});
+    var candidates=[];
+
+    facts.forEach(function(f){
+      if(f.kind==='definition'&&state.generator.types.definition){
+        var made=makeOptions(f.predicate,predicates.concat(keywords));
+        candidates.push(baseQuestion(f.subject+'について正しい説明はどれですか？',made.options,made.correct,f.source,'定義・説明'));
+      }
+      if(f.kind==='number'&&state.generator.types.number){
+        var answer=String(f.value)+f.unit;
+        var blank=f.source.replace(String(f.value)+f.unit,'＿＿＿＿');
+        var madeNum=makeOptions(answer,[],{value:f.value,unit:f.unit});
+        candidates.push(baseQuestion('空欄に入る数値はどれですか？「'+shortText(blank,67)+'」',madeNum.options,madeNum.correct,f.source,'年代・数値'));
+      }
+      if(state.generator.types.cloze){
+        var localKeys=extractKeywords(f.source).filter(function(w){return w.length>=2&&w.length<=16;});
+        var key=localKeys[0];
+        if(key&&f.source.indexOf(key)>=0){
+          var cloze=f.source.replace(key,'＿＿＿＿');
+          var madeCloze=makeOptions(key,keywords.concat(subjects));
+          candidates.push(baseQuestion('空欄に入る語句はどれですか？「'+shortText(cloze,67)+'」',madeCloze.options,madeCloze.correct,f.source,'空欄補充'));
+        }
+      }
+      if(state.generator.types.truefalse&&f.source.length<=82){
+        var tfOptions=['正しい','誤り'];
+        candidates.push(baseQuestion('次の記述は正しいですか？「'+shortText(f.source,67)+'」',tfOptions,[0],f.source,'正誤'));
+      }
+    });
+    var seen={};
+    return candidates.filter(function(q){var key=q.text.replace(/\s/g,'');if(seen[key])return false;seen[key]=true;return true;});
+  }
+
+  function baseQuestion(text,options,correct,source,objective){
+    return {id:makeId('q'),text:shortText(text,95),options:options.slice(0,4),correct:correct,time:Number(state.generator.time)||20,difficulty:state.generator.difficulty,objective:objective||'',sourceExcerpt:shortText(source,180),sourceLabel:state.meta.sourceTitle||state.meta.sourceType||'入力資料',approved:false,memo:'',standard:'',assessment:'確認',tags:[]};
+  }
+
+  function generateQuestions(){
+    var text=state.meta.sourceText.trim();
+    if(text.length<20){toast('資料本文を20文字以上入力してください。','warn');navigate('source');return;}
+    state.generator.count=clamp(state.generator.count,1,30);
+    var candidates=buildCandidates(text);
+    if(!candidates.length){toast('問題候補を作れませんでした。文章を少し詳しくしてください。','warn');return;}
+    var selected=[];
+    var shuffled=shuffle(candidates);
+    var target=Math.min(state.generator.count,shuffled.length);
+    for(var i=0;i<target;i++)selected.push(shuffled[i]);
+    if(state.questions.length){
+      confirmAction('現在の問題を置き換えますか？','すでに'+state.questions.length+'問あります。「実行する」を押すと、新しく生成した問題に置き換わります。',function(){state.questions=selected;afterGenerate();});
+    }else{state.questions=selected;afterGenerate();}
+  }
+  function afterGenerate(){lastQuality=null;queueSave();renderQuestions();renderSummary();navigate('questions');toast(state.questions.length+'問の問題案を作成しました。必ず原資料と照合してください。');}
+
+  function addQuestion(){
+    state.questions.push({id:makeId('q'),text:'',options:['','','',''],correct:[0],time:Number(state.generator.time)||20,difficulty:state.generator.difficulty,objective:'手動作成',sourceExcerpt:'',sourceLabel:state.meta.sourceTitle||'手動作成',approved:false,memo:''});
+    queueSave();renderQuestions();toast('空の問題を追加しました。');
+  }
+
+  function questionIssues(q,index,all){
+    var issues=[];
+    var opts=q.options.map(function(x){return String(x||'').trim();});
+    var filled=opts.filter(Boolean);
+    if(!q.text.trim())issues.push({level:'error',title:'問題文が空です',detail:'問題文を入力してください。'});
+    if(q.text.length>95)issues.push({level:'error',title:'問題文が95文字を超えています',detail:q.text.length+'文字あります。'});
+    if(filled.length<2)issues.push({level:'error',title:'選択肢が不足しています',detail:'2個以上の選択肢が必要です。'});
+    opts.forEach(function(o,i){if(o.length>60)issues.push({level:'error',title:'選択肢'+(i+1)+'が60文字を超えています',detail:o.length+'文字あります。'});});
+    if(new Set(filled).size!==filled.length)issues.push({level:'error',title:'同じ選択肢があります',detail:'重複する選択肢を修正してください。'});
+    if(!Array.isArray(q.correct)||!q.correct.length||q.correct.some(function(i){return !opts[i];}))issues.push({level:'error',title:'正解が正しく指定されていません',detail:'入力済みの選択肢から正解を選んでください。'});
+    if(!q.sourceExcerpt)issues.push({level:'warning',title:'出典・根拠がありません',detail:'原資料の該当文を残すと確認しやすくなります。'});
+    if(/(最も|適切|すべて|必ず|絶対)/.test(q.text))issues.push({level:'warning',title:'曖昧さに注意する表現があります',detail:'正解が一つに定まるか確認してください。'});
+    if(filled.some(function(o){return /資料には記載されていない|別の内容を表している|当てはまらない/.test(o);}))issues.push({level:'warning',title:'汎用的な誤答があります',detail:'実際に起こりやすい誤解を使った選択肢に直すと効果的です。'});
+    var normalized=q.text.replace(/\s/g,'');
+    if(all.some(function(other,j){return j<index&&other.text.replace(/\s/g,'')===normalized&&normalized;}))issues.push({level:'warning',title:'同じ問題文が重複しています',detail:'前の問題と内容を比較してください。'});
+    if(!allowedTimes.includes(Number(q.time)))issues.push({level:'error',title:'制限時間が対応値ではありません',detail:'5・10・20・30・60・120秒から選んでください。'});
+    return issues;
+  }
+
+  function renderQuestions(){
+    var list=$('#questionList');
+    var term=$('#questionSearch').value.trim().toLowerCase();
+    var filter=$('#questionFilter').value;
+    if(!state.questions.length){list.innerHTML='<div class="empty"><span class="empty-icon">?</span><strong>問題がまだありません</strong><div class="small mt-1">資料から生成するか、手動で追加してください。</div><button class="btn btn-primary mt-2" data-action="navigate" data-page="source">資料から作る</button> <button class="btn btn-paper mt-2" data-action="add-question">手動追加</button></div>';$('#questionVisibleCount').textContent='0';return;}
+    var shown=[];
+    state.questions.forEach(function(q,index){
+      var issues=questionIssues(q,index,state.questions);
+      var hay=(q.text+' '+q.options.join(' ')).toLowerCase();
+      var matchTerm=!term||hay.indexOf(term)>=0;
+      var matchFilter=filter==='all'||(filter==='approved'&&q.approved)||(filter==='unapproved'&&!q.approved)||(filter==='issue'&&issues.length>0);
+      if(matchTerm&&matchFilter)shown.push({q:q,index:index,issues:issues});
+    });
+    $('#questionVisibleCount').textContent=shown.length;
+    if(!shown.length){list.innerHTML='<div class="empty">条件に一致する問題がありません。</div>';return;}
+    list.innerHTML=shown.map(function(item){return questionCardHtml(item.q,item.index,item.issues);}).join('');
+  }
+
+  function questionCardHtml(q,index,issues){
+    var issueBadge=issues.length?'<span class="badge warn">要確認 '+issues.length+'</span>':'<span class="badge ok">形式OK</span>';
+    var difficultyClass=q.difficulty==='基礎'?'easy':(q.difficulty==='発展'?'hard':'standard');
+    var optionHtml=q.options.map(function(opt,i){return '<div class="option-row"><div class="option-radio"><input type="radio" name="correct_'+esc(q.id)+'" data-q-action="correct" data-id="'+esc(q.id)+'" data-index="'+i+'" '+(q.correct.indexOf(i)>=0?'checked':'')+' aria-label="選択肢'+(i+1)+'を正解にする"></div><input type="text" maxlength="80" value="'+esc(opt)+'" data-q-action="option" data-id="'+esc(q.id)+'" data-index="'+i+'" placeholder="選択肢 '+(i+1)+'"></div>';}).join('');
+    return '<article class="question-card '+(q.approved?'approved':'')+'" data-question-id="'+esc(q.id)+'">'+
+      '<div class="q-head"><div class="q-number"><span class="q-index">'+(index+1)+'</span><span>問題 '+(index+1)+'</span></div><div class="q-meta"><span class="badge '+difficultyClass+'">'+esc(q.difficulty)+'</span>'+issueBadge+'</div></div>'+
+      '<div class="q-body"><label>問題文 <span class="muted">（<span data-count-for="'+esc(q.id)+'">'+q.text.length+'</span>/95）</span></label><textarea class="q-text" maxlength="140" data-q-action="text" data-id="'+esc(q.id)+'" placeholder="問題文を入力">'+esc(q.text)+'</textarea>'+
+      '<div class="option-grid">'+optionHtml+'</div>'+
+      '<div class="q-footer"><div class="q-settings"><select data-q-action="time" data-id="'+esc(q.id)+'" aria-label="制限時間">'+allowedTimes.map(function(t){return '<option value="'+t+'" '+(Number(q.time)===t?'selected':'')+'>'+t+'秒</option>';}).join('')+'</select><select data-q-action="difficulty" data-id="'+esc(q.id)+'" aria-label="難易度">'+['基礎','標準','発展'].map(function(d){return '<option '+(q.difficulty===d?'selected':'')+'>'+d+'</option>';}).join('')+'</select><input type="text" value="'+esc(q.objective)+'" data-q-action="objective" data-id="'+esc(q.id)+'" placeholder="学習目標"></div>'+
+      '<div class="toolbar"><button class="btn btn-soft btn-small" data-q-action="approve" data-id="'+esc(q.id)+'">'+(q.approved?'✓ 承認済み':'承認する')+'</button><button class="btn btn-paper btn-small" data-q-action="move-up" data-id="'+esc(q.id)+'" aria-label="上へ移動">↑</button><button class="btn btn-paper btn-small" data-q-action="move-down" data-id="'+esc(q.id)+'" aria-label="下へ移動">↓</button><button class="btn btn-paper btn-small" data-q-action="distractors" data-id="'+esc(q.id)+'">誤答再生成</button><button class="btn btn-paper btn-small" data-q-action="duplicate" data-id="'+esc(q.id)+'">複製</button><button class="btn btn-danger btn-small" data-q-action="delete" data-id="'+esc(q.id)+'">削除</button></div></div>'+
+      '<div class="source-quote"><strong>根拠：</strong><input type="text" value="'+esc(q.sourceExcerpt)+'" data-q-action="source" data-id="'+esc(q.id)+'" placeholder="原資料の該当文" style="margin-top:5px;background:#fff"></div></div></article>';
+  }
+
+  function findQuestion(id){return state.questions.find(function(q){return q.id===id;});}
+  function handleQuestionChange(target){
+    var q=findQuestion(target.dataset.id);if(!q)return;
+    var action=target.dataset.qAction;
+    if(action==='text'){q.text=target.value;var count=$('[data-count-for="'+q.id+'"]');if(count)count.textContent=q.text.length;}
+    else if(action==='option'){q.options[Number(target.dataset.index)]=target.value;}
+    else if(action==='correct'){q.correct=[Number(target.dataset.index)];}
+    else if(action==='time'){q.time=Number(target.value);}
+    else if(action==='difficulty'){q.difficulty=target.value;}
+    else if(action==='objective'){q.objective=target.value;}
+    else if(action==='source'){q.sourceExcerpt=target.value;}
+    lastQuality=null;queueSave();
+  }
+
+  function handleQuestionButton(target){
+    var q=findQuestion(target.dataset.id);if(!q)return;
+    var action=target.dataset.qAction;
+    if(action==='approve'){q.approved=!q.approved;queueSave();renderQuestions();toast(q.approved?'問題を承認済みにしました。':'承認を解除しました。');}
+    if(action==='duplicate'){var copy=clone(q);copy.id=makeId('q');copy.approved=false;var idx=state.questions.indexOf(q);state.questions.splice(idx+1,0,copy);queueSave();renderQuestions();toast('問題を複製しました。');}
+    if(action==='delete'){confirmAction('問題を削除しますか？','「'+shortText(q.text||'未入力の問題',48)+'」を削除します。',function(){state.questions=state.questions.filter(function(x){return x.id!==q.id;});queueSave();renderQuestions();toast('問題を削除しました。');});}
+
+    if(action==='move-up'||action==='move-down'){
+      var pos=state.questions.indexOf(q);var next=action==='move-up'?pos-1:pos+1;
+      if(next>=0&&next<state.questions.length){var temp=state.questions[pos];state.questions[pos]=state.questions[next];state.questions[next]=temp;queueSave();renderQuestions();}
+    }
+    if(action==='distractors'){
+      var correct=q.options[q.correct[0]]||'';if(!correct){toast('先に正解の選択肢を入力してください。','warn');return;}
+      var pool=extractKeywords(state.meta.sourceText).filter(function(x){return x!==correct;});var made=makeOptions(correct,pool);q.options=made.options;q.correct=made.correct;q.approved=false;queueSave();renderQuestions();toast('誤答候補を作り直しました。');
+    }
+  }
+
+  function runQuality(goPage){
+    var allIssues=[];var requiredOk=0,lengthOk=0,sourceOk=0;
+    state.questions.forEach(function(q,index){
+      var issues=questionIssues(q,index,state.questions);
+      issues.forEach(function(issue){allIssues.push({question:index+1,id:q.id,level:issue.level,title:issue.title,detail:issue.detail});});
+      var filled=q.options.filter(function(x){return String(x).trim();});
+      if(q.text.trim()&&filled.length>=2&&q.correct.length&&q.correct.every(function(i){return filled.indexOf(q.options[i])>=0;}))requiredOk++;
+      if(q.text.length<=95&&q.options.every(function(x){return String(x).length<=60;}))lengthOk++;
+      if(q.sourceExcerpt)sourceOk++;
+    });
+    if(state.questions.length){
+      var counts=[0,0,0,0];state.questions.forEach(function(q){if(q.correct&&q.correct.length)counts[q.correct[0]]++;});
+      var max=Math.max.apply(null,counts);if(state.questions.length>=4&&max/state.questions.length>.65)allIssues.push({question:'全体',id:null,level:'warning',title:'正解位置が偏っています',detail:'同じ位置が'+max+'問あります。選択肢の順番を調整してください。'});
+    }
+    var errors=allIssues.filter(function(x){return x.level==='error';}).length;
+    var warnings=allIssues.filter(function(x){return x.level==='warning';}).length;
+    var score=state.questions.length?Math.max(0,100-errors*12-warnings*4):0;
+    var total=state.questions.length||1;
+    lastQuality={issues:allIssues,errors:errors,warnings:warnings,score:score,required:Math.round(requiredOk/total*100),length:Math.round(lengthOk/total*100),source:Math.round(sourceOk/total*100)};
+    renderQuality();renderSummary();renderExport();
+    if(goPage!==false)navigate('quality');
+  }
+
+  function renderQuality(){
+    var q=lastQuality||{issues:[],errors:0,warnings:0,score:0,required:0,length:0,source:0};
+    $('#qualityScore').textContent=q.score;$('#scoreRing').style.setProperty('--score',q.score);
+    var headline='まだ問題がありません';var summary='資料から問題を生成するか、手動で追加してください。';
+    if(state.questions.length){
+      if(q.errors===0&&q.warnings===0){headline='形式上はきれいに整っています';summary='最後に、正解と根拠を原資料で確認してください。';}
+      else if(q.errors===0){headline='出力できますが、確認事項があります';summary=q.warnings+'件の注意を確認してください。';}
+      else{headline='修正が必要な項目があります';summary='エラー'+q.errors+'件、注意'+q.warnings+'件が見つかりました。';}
+    }
+    $('#qualityHeadline').textContent=headline;$('#qualitySummary').textContent=summary;
+    [['Required','required'],['Length','length'],['Source','source']].forEach(function(pair){$('#bar'+pair[0]).style.width=q[pair[1]]+'%';$('#val'+pair[0]).textContent=q[pair[1]]+'%';});
+    $('#issueCountBadge').textContent=q.issues.length+'件';
+    if(!q.issues.length){$('#issueList').innerHTML='<div class="empty">'+(state.questions.length?'自動チェックで問題は見つかりませんでした。正解内容は原資料で確認してください。':'問題がまだありません。')+'</div>';return;}
+    $('#issueList').innerHTML=q.issues.map(function(issue){var icon=issue.level==='error'?'!':(issue.level==='warning'?'△':'i');return '<div class="issue '+esc(issue.level)+'"><div class="issue-icon">'+icon+'</div><div><div class="issue-title">'+esc(issue.title)+'</div><div class="issue-detail">'+esc(issue.detail)+'</div></div>'+(issue.id?'<button class="btn btn-paper btn-small" data-action="jump-question" data-id="'+esc(issue.id)+'">問題'+issue.question+'</button>':'<span class="badge">全体</span>')+'</div>';}).join('');
+  }
+
+  function renderSummary(){
+    var approved=state.questions.filter(function(q){return q.approved;}).length;
+    $('#dashboardProjectName').textContent=state.meta.title||'名称未設定のクイズ';
+    $('#dashboardStamp').textContent=state.questions.length&&approved===state.questions.length?'確認済':'作成中';
+    $('#statQuestions').textContent=state.questions.length;$('#statApproved').textContent=approved;$('#statScore').textContent=lastQuality?lastQuality.score:'—';$('#statIssues').textContent=lastQuality?lastQuality.issues.length:0;
+  }
+
+  function renderExport(){
+    var approved=state.questions.filter(function(q){return q.approved;}).length;
+    $('#exportTitle').textContent=state.meta.title||'名称未設定';$('#exportCount').textContent=state.questions.length+'問';$('#exportApproved').textContent=approved+'問';$('#exportScore').textContent=lastQuality?lastQuality.score+'点':'—';
+    $('#exportStamp').textContent=!lastQuality?'未点検':(lastQuality.errors?'要修正':(lastQuality.warnings?'要確認':'形式OK'));
+  }
+
+  function saveProject(){
+    var projects=getProjects();var snap=clone(state);snap.updatedAt=new Date().toISOString();snap.meta.title=snap.meta.title||'名称未設定のクイズ';var existing=projects.findIndex(function(p){return p.id===snap.id;});if(existing>=0)projects[existing]=snap;else projects.unshift(snap);projects=projects.slice(0,40);if(setProjects(projects)){state.updatedAt=snap.updatedAt;queueSave();renderProjects();toast('プロジェクトを保存しました。');}
+  }
+
+  function renderProjects(){
+    var projects=getProjects();$('#projectCountBadge').textContent=projects.length+'件';var list=$('#projectList');
+    if(!projects.length){list.innerHTML='<div class="empty"><span class="empty-icon">▣</span>保存されたプロジェクトはありません。</div>';return;}
+    list.innerHTML=projects.map(function(p){var count=Array.isArray(p.questions)?p.questions.length:0;return '<div class="project-item"><div><div class="project-title">'+esc((p.meta&&p.meta.title)||'名称未設定')+'</div><div class="project-meta">'+esc((p.meta&&p.meta.school)||'')+' '+esc((p.meta&&p.meta.grade)||'')+'・'+esc((p.meta&&p.meta.subject)||'')+' ／ '+count+'問 ／ '+esc(formatDate(p.updatedAt))+'</div></div><div class="project-actions"><button class="btn btn-soft btn-small" data-action="load-project" data-id="'+esc(p.id)+'">開く</button><button class="btn btn-paper btn-small" data-action="download-project" data-id="'+esc(p.id)+'">JSON</button><button class="btn btn-danger btn-small" data-action="delete-project" data-id="'+esc(p.id)+'">削除</button></div></div>';}).join('');
+  }
+
+  function loadProject(id){var p=getProjects().find(function(x){return x.id===id;});if(!p)return;confirmAction('保存プロジェクトを開きますか？','現在の作業内容は自動保存されています。保存一覧の「'+((p.meta&&p.meta.title)||'名称未設定')+'」を開きます。',function(){state=clone(p);ensureExtendedState(state);lastQuality=null;syncFormFromState();queueSave();renderAll();navigate('dashboard');toast('プロジェクトを開きました。');});}
+  function deleteProject(id){var list=getProjects();var p=list.find(function(x){return x.id===id;});confirmAction('保存データを削除しますか？',(p&&p.meta?p.meta.title:'このプロジェクト')+'を保存一覧から削除します。',function(){setProjects(list.filter(function(x){return x.id!==id;}));renderProjects();toast('保存データを削除しました。');});}
+
+  function confirmAction(title,message,callback){$('#modalTitle').textContent=title;$('#modalMessage').textContent=message;modalCallback=callback;$('#confirmModal').classList.add('open');}
+  function closeModal(){modalCallback=null;$('#confirmModal').classList.remove('open');}
+  function confirmModal(){var cb=modalCallback;closeModal();if(typeof cb==='function')cb();}
+
+  function newProject(){confirmAction('新しいプロジェクトを始めますか？','現在の作業内容は自動保存されています。必要なら先にプロジェクト保存またはJSON出力をしてください。',function(){state=defaultState();lastQuality=null;syncFormFromState();queueSave();renderAll();navigate('source');toast('新しいプロジェクトを開始しました。');});}
+
+  function loadDemo(){
+    var demo='光合成とは、植物が光のエネルギーを使って二酸化炭素と水からデンプンなどの養分をつくるはたらきである。\n植物は、光合成を行うときに二酸化炭素を取り入れ、酸素を放出する。\n葉の表皮には気孔があり、気体の出入りに関係している。\n葉緑体は、植物の細胞の中にあり、光合成が行われる場所である。\n呼吸では、酸素を使って養分からエネルギーを取り出し、二酸化炭素を放出する。\n光合成は光が必要だが、呼吸は昼も夜も行われる。';
+    state.meta.title='中2理科 光合成と呼吸';state.meta.school='中学校';state.meta.grade='2年';state.meta.subject='理科';state.meta.unit='植物の体のつくりとはたらき';state.meta.sourceTitle='授業プリント「光合成と呼吸」';state.meta.sourceType='授業プリント';state.meta.sourceText=demo;state.generator.count=10;state.generator.difficulty='標準';state.generator.time=20;syncFormFromState();queueSave();updateSourceInsights();navigate('source');toast('サンプル資料を読み込みました。「問題を生成」を押してください。');
+  }
+
+  function cleanSource(){state.meta.sourceText=normalizeText(state.meta.sourceText);$('#sourceText').value=state.meta.sourceText;updateSourceInsights();queueSave();toast('空白や改行を整えました。');}
+  function clearSource(){confirmAction('資料本文を消去しますか？','問題は残したまま、資料本文だけを空にします。',function(){state.meta.sourceText='';$('#sourceText').value='';updateSourceInsights();queueSave();});}
+
+  function readTextFile(file){
+    if(!file)return;var reader=new FileReader();reader.onload=function(){var text=String(reader.result||'');if(/\.html?$/i.test(file.name)){var doc=new DOMParser().parseFromString(text,'text/html');text=doc.body?doc.body.textContent:text;}if(/\.json$/i.test(file.name)){var parsed=safeParse(text,null);if(parsed&&typeof parsed==='object')text=JSON.stringify(parsed,null,2);}state.meta.sourceText=normalizeText(text);state.meta.sourceTitle=state.meta.sourceTitle||file.name;$('#sourceText').value=state.meta.sourceText;$('#sourceTitle').value=state.meta.sourceTitle;updateSourceInsights();queueSave();toast(file.name+'を読み込みました。');};reader.onerror=function(){toast('ファイルを読み込めませんでした。','error');};reader.readAsText(file,'UTF-8');
+  }
+
+  function rowsForExport(){
+    return state.questions.map(function(q){var opts=q.options.slice(0,4);while(opts.length<4)opts.push('');return [shortText(q.text,95),shortText(opts[0],60),shortText(opts[1],60),shortText(opts[2],60),shortText(opts[3],60),allowedTimes.includes(Number(q.time))?Number(q.time):20,q.correct.map(function(i){return i+1;}).join(',')];});
+  }
+  var exportHeaders=['Question - max 95 characters','Answer 1 - max 60 characters','Answer 2 - max 60 characters','Answer 3 - max 60 characters','Answer 4 - max 60 characters','Time limit (sec) - 5, 10, 20, 30, 60, or 120 secs','Correct answer(s) - choose at least one'];
+  function ensureExportable(){if(!state.questions.length){toast('出力する問題がありません。','warn');return false;}runQuality(false);if(lastQuality.errors){toast('形式エラーが'+lastQuality.errors+'件あります。品質チェックを確認してください。','warn');}return true;}
+  function csvCell(value){var s=String(value==null?'':value);return '"'+s.replace(/"/g,'""')+'"';}
+  function downloadBlob(blob,name){var url=URL.createObjectURL(blob);var a=document.createElement('a');a.href=url;a.download=name;document.body.appendChild(a);a.click();a.remove();setTimeout(function(){URL.revokeObjectURL(url);},1000);}
+  function exportCsv(){if(!ensureExportable())return;var rows=[exportHeaders].concat(rowsForExport());var csv='\ufeff'+rows.map(function(r){return r.map(csvCell).join(',');}).join('\r\n');downloadBlob(new Blob([csv],{type:'text/csv;charset=utf-8'}),fileSafe(state.meta.title)+'_kahoot.csv');toast('CSVを出力しました。');}
+  function exportJson(data,name){var payload=data||state;downloadBlob(new Blob([JSON.stringify(payload,null,2)],{type:'application/json'}),(name||fileSafe((payload.meta&&payload.meta.title)||'プロジェクト'))+'.json');toast('JSONを出力しました。');}
+  function copyTsv(){if(!ensureExportable())return;var tsv=rowsForExport().map(function(r){return r.map(function(v){return String(v).replace(/[\t\r\n]+/g,' ');}).join('\t');}).join('\n');if(navigator.clipboard&&navigator.clipboard.writeText){navigator.clipboard.writeText(tsv).then(function(){toast('貼り付け用データをコピーしました。');}).catch(function(){fallbackCopy(tsv);});}else fallbackCopy(tsv);}
+  function fallbackCopy(text){var ta=document.createElement('textarea');ta.value=text;ta.style.position='fixed';ta.style.opacity='0';document.body.appendChild(ta);ta.select();try{document.execCommand('copy');toast('貼り付け用データをコピーしました。');}catch(e){toast('コピーできませんでした。CSV出力を利用してください。','error');}ta.remove();}
+
+  function crcTable(){var table=[];for(var n=0;n<256;n++){var c=n;for(var k=0;k<8;k++)c=(c&1)?(0xedb88320^(c>>>1)):(c>>>1);table[n]=c>>>0;}return table;}
+  var CRC_TABLE=crcTable();
+  function crc32(bytes){var c=0xffffffff;for(var i=0;i<bytes.length;i++)c=CRC_TABLE[(c^bytes[i])&255]^(c>>>8);return (c^0xffffffff)>>>0;}
+  function u16(n){return new Uint8Array([n&255,(n>>>8)&255]);}
+  function u32(n){return new Uint8Array([n&255,(n>>>8)&255,(n>>>16)&255,(n>>>24)&255]);}
+  function concatBytes(parts){var len=parts.reduce(function(s,p){return s+p.length;},0);var out=new Uint8Array(len);var off=0;parts.forEach(function(p){out.set(p,off);off+=p.length;});return out;}
+  function dosTimeDate(date){var d=date||new Date();var time=(d.getSeconds()>>1)|(d.getMinutes()<<5)|(d.getHours()<<11);var day=Math.max(1,d.getDate());var dosDate=day|((d.getMonth()+1)<<5)|((Math.max(1980,d.getFullYear())-1980)<<9);return {time:time,date:dosDate};}
+  function makeZip(files){
+    var enc=new TextEncoder();var locals=[];var centrals=[];var offset=0;var dt=dosTimeDate(new Date());
+    files.forEach(function(file){var name=enc.encode(file.name);var data=typeof file.data==='string'?enc.encode(file.data):file.data;var crc=crc32(data);var local=concatBytes([u32(0x04034b50),u16(20),u16(0x0800),u16(0),u16(dt.time),u16(dt.date),u32(crc),u32(data.length),u32(data.length),u16(name.length),u16(0),name,data]);locals.push(local);var central=concatBytes([u32(0x02014b50),u16(20),u16(20),u16(0x0800),u16(0),u16(dt.time),u16(dt.date),u32(crc),u32(data.length),u32(data.length),u16(name.length),u16(0),u16(0),u16(0),u16(0),u32(0),u32(offset),name]);centrals.push(central);offset+=local.length;});
+    var centralData=concatBytes(centrals);var end=concatBytes([u32(0x06054b50),u16(0),u16(0),u16(files.length),u16(files.length),u32(centralData.length),u32(offset),u16(0)]);return concatBytes(locals.concat([centralData,end]));
+  }
+  function colName(n){var s='';while(n>0){var m=(n-1)%26;s=String.fromCharCode(65+m)+s;n=Math.floor((n-1)/26);}return s;}
+  function cellXml(ref,value,style){if(typeof value==='number')return '<c r="'+ref+'" s="'+style+'"><v>'+value+'</v></c>';return '<c r="'+ref+'" t="inlineStr" s="'+style+'"><is><t xml:space="preserve">'+xmlEsc(value)+'</t></is></c>';}
+  function exportXlsx(){
+    if(!ensureExportable())return;
+    var rows=[exportHeaders].concat(rowsForExport());var sheetRows=rows.map(function(row,r){var cells=row.map(function(value,c){return cellXml(colName(c+1)+(r+1),value,r===0?1:2);}).join('');return '<row r="'+(r+1)+'" ht="'+(r===0?38:30)+'" customHeight="1">'+cells+'</row>';}).join('');
+    var sheet='<?xml version="1.0" encoding="UTF-8" standalone="yes"?><worksheet xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main"><cols><col min="1" max="1" width="46" customWidth="1"/><col min="2" max="5" width="28" customWidth="1"/><col min="6" max="7" width="30" customWidth="1"/></cols><sheetData>'+sheetRows+'</sheetData><autoFilter ref="A1:G'+rows.length+'"/><pageMargins left="0.3" right="0.3" top="0.5" bottom="0.5" header="0.2" footer="0.2"/></worksheet>';
+    var styles='<?xml version="1.0" encoding="UTF-8" standalone="yes"?><styleSheet xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main"><fonts count="2"><font><sz val="11"/><name val="Yu Gothic"/></font><font><b/><color rgb="FFFFFFFF"/><sz val="11"/><name val="Yu Gothic"/></font></fonts><fills count="3"><fill><patternFill patternType="none"/></fill><fill><patternFill patternType="gray125"/></fill><fill><patternFill patternType="solid"><fgColor rgb="FF173F3A"/><bgColor indexed="64"/></patternFill></fill></fills><borders count="2"><border><left/><right/><top/><bottom/><diagonal/></border><border><left style="thin"><color rgb="FFD9DDD5"/></left><right style="thin"><color rgb="FFD9DDD5"/></right><top style="thin"><color rgb="FFD9DDD5"/></top><bottom style="thin"><color rgb="FFD9DDD5"/></bottom><diagonal/></border></borders><cellStyleXfs count="1"><xf numFmtId="0" fontId="0" fillId="0" borderId="0"/></cellStyleXfs><cellXfs count="3"><xf numFmtId="0" fontId="0" fillId="0" borderId="0" xfId="0"/><xf numFmtId="0" fontId="1" fillId="2" borderId="1" xfId="0" applyAlignment="1"><alignment wrapText="1" vertical="center" horizontal="center"/></xf><xf numFmtId="0" fontId="0" fillId="0" borderId="1" xfId="0" applyAlignment="1"><alignment wrapText="1" vertical="center"/></xf></cellXfs><cellStyles count="1"><cellStyle name="Normal" xfId="0" builtinId="0"/></cellStyles></styleSheet>';
+    var files=[
+      {name:'[Content_Types].xml',data:'<?xml version="1.0" encoding="UTF-8" standalone="yes"?><Types xmlns="http://schemas.openxmlformats.org/package/2006/content-types"><Default Extension="rels" ContentType="application/vnd.openxmlformats-package.relationships+xml"/><Default Extension="xml" ContentType="application/xml"/><Override PartName="/xl/workbook.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet.main+xml"/><Override PartName="/xl/worksheets/sheet1.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.worksheet+xml"/><Override PartName="/xl/styles.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.styles+xml"/><Override PartName="/docProps/core.xml" ContentType="application/vnd.openxmlformats-package.core-properties+xml"/><Override PartName="/docProps/app.xml" ContentType="application/vnd.openxmlformats-officedocument.extended-properties+xml"/></Types>'},
+      {name:'_rels/.rels',data:'<?xml version="1.0" encoding="UTF-8" standalone="yes"?><Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships"><Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/officeDocument" Target="xl/workbook.xml"/><Relationship Id="rId2" Type="http://schemas.openxmlformats.org/package/2006/relationships/metadata/core-properties" Target="docProps/core.xml"/><Relationship Id="rId3" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/extended-properties" Target="docProps/app.xml"/></Relationships>'},
+      {name:'xl/workbook.xml',data:'<?xml version="1.0" encoding="UTF-8" standalone="yes"?><workbook xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main" xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships"><sheets><sheet name="Quiz" sheetId="1" r:id="rId1"/></sheets></workbook>'},
+      {name:'xl/_rels/workbook.xml.rels',data:'<?xml version="1.0" encoding="UTF-8" standalone="yes"?><Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships"><Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/worksheet" Target="worksheets/sheet1.xml"/><Relationship Id="rId2" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/styles" Target="styles.xml"/></Relationships>'},
+      {name:'xl/worksheets/sheet1.xml',data:sheet},{name:'xl/styles.xml',data:styles},
+      {name:'docProps/core.xml',data:'<?xml version="1.0" encoding="UTF-8" standalone="yes"?><cp:coreProperties xmlns:cp="http://schemas.openxmlformats.org/package/2006/metadata/core-properties" xmlns:dc="http://purl.org/dc/elements/1.1/" xmlns:dcterms="http://purl.org/dc/terms/" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"><dc:title>'+xmlEsc(state.meta.title||'Quiz')+'</dc:title><dc:creator>QuizCraft EDU</dc:creator><dcterms:created xsi:type="dcterms:W3CDTF">'+new Date().toISOString()+'</dcterms:created></cp:coreProperties>'},
+      {name:'docProps/app.xml',data:'<?xml version="1.0" encoding="UTF-8" standalone="yes"?><Properties xmlns="http://schemas.openxmlformats.org/officeDocument/2006/extended-properties" xmlns:vt="http://schemas.openxmlformats.org/officeDocument/2006/docPropsVTypes"><Application>QuizCraft EDU</Application></Properties>'}
+    ];
+    var bytes=makeZip(files);downloadBlob(new Blob([bytes],{type:'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'}),fileSafe(state.meta.title)+'_kahoot.xlsx');toast('Excelファイルを出力しました。Kahoot!側で内容を確認してください。');
+  }
+
+  function readJsonProject(file){if(!file)return;var reader=new FileReader();reader.onload=function(){var data=safeParse(String(reader.result||''),null);if(!data||!data.meta||!Array.isArray(data.questions)){toast('このアプリのプロジェクトJSONではありません。','error');return;}state=data;ensureExtendedState(state);state.id=state.id||makeId('project');state.generator=state.generator||defaultState().generator;lastQuality=null;syncFormFromState();queueSave();renderAll();navigate('dashboard');toast('プロジェクトを読み込みました。');};reader.onerror=function(){toast('JSONを読み込めませんでした。','error');};reader.readAsText(file,'UTF-8');}
+
+  function printQuiz(){
+    if(!state.questions.length){toast('印刷する問題がありません。','warn');return;}
+    var title=esc(state.meta.title||'クイズ');var questions=state.questions.map(function(q,i){var opts=q.options.filter(Boolean).map(function(o,j){return '<li>'+esc(o)+(q.correct.indexOf(j)>=0?' <strong class="answer">［正解］</strong>':'')+'</li>';}).join('');return '<section class="q"><h2>問'+(i+1)+'　'+esc(q.text)+'</h2><ol>'+opts+'</ol><p class="source">根拠：'+esc(q.sourceExcerpt||'未設定')+'</p></section>';}).join('');
+    var win=window.open('','_blank');if(!win){toast('ポップアップがブロックされました。許可して再度お試しください。','warn');return;}
+    win.document.open();win.document.write('<!doctype html><html lang="ja"><head><meta charset="utf-8"><title>'+title+'</title><style>body{font-family:"Yu Gothic",sans-serif;color:#17201f;max-width:900px;margin:0 auto;padding:32px;line-height:1.7}header{border-bottom:4px solid #173f3a;margin-bottom:24px}h1{font-size:24px}.meta{color:#65716e}.q{break-inside:avoid;border-bottom:1px solid #ddd;padding:12px 0}h2{font-size:16px}ol{display:grid;grid-template-columns:1fr 1fr;gap:5px 28px}.source{font-size:11px;color:#65716e}.answer{color:#c7463c}.controls{position:sticky;top:0;background:#fff;padding:8px 0}@media print{.controls{display:none}.answer,.source{display:none}@page{size:A4;margin:15mm}}</style></head><body><div class="controls"><button onclick="window.print()">印刷する</button>　※印刷時は正解と根拠が非表示になります。</div><header><h1>'+title+'</h1><p class="meta">'+esc(state.meta.school+' '+state.meta.grade+'　'+state.meta.subject+'　'+state.meta.unit)+'</p></header>'+questions+'</body></html>');win.document.close();
+  }
+
+  function jumpQuestion(id){navigate('questions');setTimeout(function(){var el=$('[data-question-id="'+id+'"]');if(el){el.scrollIntoView({behavior:'smooth',block:'center'});el.style.boxShadow='0 0 0 4px rgba(243,201,85,.7)';setTimeout(function(){el.style.boxShadow='';},1700);}},80);}
+
+
+  function applyPreset(name){
+    var presets={warmup:{count:5,difficulty:'基礎',time:10,purpose:'授業前の導入'},review:{count:10,difficulty:'標準',time:20,purpose:'既習事項の復習'},exam:{count:15,difficulty:'混合',time:30,purpose:'定期テスト対策'}};
+    var p=presets[name];if(!p)return;state.generator.count=p.count;state.generator.difficulty=p.difficulty;state.generator.time=p.time;state.meta.purpose=p.purpose;syncFormFromState();queueSave();toast((name==='warmup'?'導入5問':name==='review'?'復習10問':'テスト前15問')+'の設定を適用しました。');
+  }
+  function shuffleQuestionOptions(q,targetIndex){
+    var correctText=q.options[q.correct[0]];var pairs=q.options.map(function(text,i){return {text:text,correct:i===q.correct[0]};});
+    pairs=shuffle(pairs);if(typeof targetIndex==='number'&&targetIndex>=0&&targetIndex<pairs.length){var now=pairs.findIndex(function(x){return x.correct;});var t=pairs[targetIndex];pairs[targetIndex]=pairs[now];pairs[now]=t;}
+    q.options=pairs.map(function(x){return x.text;});q.correct=[pairs.findIndex(function(x){return x.correct;})];q.approved=false;
+  }
+  function batchApprove(){if(!state.questions.length){toast('問題がありません。','warn');return;}state.questions.forEach(function(q){q.approved=true;});queueSave();renderQuestions();renderSummary();toast('全問を承認済みにしました。');}
+  function shuffleAll(){if(!state.questions.length){toast('問題がありません。','warn');return;}state.questions.forEach(function(q){shuffleQuestionOptions(q);});lastQuality=null;queueSave();renderQuestions();toast('全問題の選択肢をシャッフルしました。');}
+  function balanceAnswers(){if(!state.questions.length){toast('問題がありません。','warn');return;}state.questions.forEach(function(q,i){shuffleQuestionOptions(q,i%Math.min(4,q.options.length));});lastQuality=null;queueSave();renderQuestions();renderAnalytics();toast('正解位置を均等に並べ直しました。');}
+  function normalizeTimes(){if(!state.questions.length){toast('問題がありません。','warn');return;}state.questions.forEach(function(q){var len=q.text.length+q.options.join('').length;q.time=len>160?60:(len>105?30:(q.objective==='正誤'?10:20));});lastQuality=null;queueSave();renderQuestions();toast('文章量に応じて制限時間を調整しました。');}
+
+  function renderAnalytics(){
+    var total=state.questions.length;var approved=state.questions.filter(function(q){return q.approved;}).length;var seconds=state.questions.reduce(function(sum,q){return sum+Number(q.time||20)+5;},0);
+    var objectives={};var difficulties={'基礎':0,'標準':0,'発展':0,'混合':0};var positions=[0,0,0,0];
+    state.questions.forEach(function(q){objectives[q.objective||'未分類']=(objectives[q.objective||'未分類']||0)+1;difficulties[q.difficulty]=(difficulties[q.difficulty]||0)+1;if(q.correct&&q.correct[0]>=0&&q.correct[0]<4)positions[q.correct[0]]++;});
+    $('#analyticsTitle').textContent=state.meta.title||'名称未設定のクイズ';$('#anaCount').textContent=total;$('#anaTime').textContent=total?Math.max(1,Math.ceil(seconds/60))+'分':'0分';$('#anaTypes').textContent=Object.keys(objectives).length;$('#anaApproval').textContent=(total?Math.round(approved/total*100):0)+'%';
+    var narrative=total?'全'+total+'問・約'+Math.max(1,Math.ceil(seconds/60))+'分の構成です。'+(approved===total?'全問が承認済みです。':'未承認の問題が'+(total-approved)+'問あります。'):'問題を追加すると、難易度・出題形式・正解位置・時間配分を分析します。';$('#analyticsNarrative').textContent=narrative;
+    var colors={'基礎':'#27b8a5','標準':'#6268e6','発展':'#f16883','混合':'#f1b743'};var diffEntries=Object.keys(difficulties).filter(function(k){return difficulties[k]>0;});
+    if(!diffEntries.length){$('#difficultyChart').innerHTML='<div class="empty">分析する問題がありません。</div>';}else{var start=0;var parts=diffEntries.map(function(k){var pct=difficulties[k]/total*100;var part=colors[k]+' '+start+'% '+(start+pct)+'%';start+=pct;return part;});$('#difficultyChart').innerHTML='<div class="donut" style="background:conic-gradient('+parts.join(',')+')"></div><div class="legend">'+diffEntries.map(function(k){return '<div class="legend-row"><span class="legend-dot" style="background:'+colors[k]+'"></span><span>'+esc(k)+'</span><strong>'+difficulties[k]+'問</strong></div>';}).join('')+'</div>';}
+    var maxPos=Math.max.apply(null,positions.concat([1]));$('#answerChart').innerHTML=positions.map(function(v,i){return '<div class="bar-col"><div class="bar-space"><div class="bar-fill" style="height:'+(v/maxPos*100)+'%"><strong>'+v+'</strong></div></div><span>選択肢 '+(i+1)+'</span></div>';}).join('');
+    var objectiveEntries=Object.keys(objectives).sort(function(a,b){return objectives[b]-objectives[a];});$('#objectiveChart').innerHTML=objectiveEntries.length?objectiveEntries.map(function(k){return '<span class="analysis-tag">'+esc(k)+' <b>'+objectives[k]+'</b></span>';}).join(''):'<div class="empty">出題形式がありません。</div>';
+    var tips=[];if(!total)tips.push(['＋','まず問題を作成','資料画面から問題を生成してみましょう。']);else{if(approved<total)tips.push(['✓','未承認問題を確認','あと'+(total-approved)+'問を原資料と照合してください。']);if(Math.max.apply(null,positions)/total>.5)tips.push(['↔','正解位置を分散','正解位置の偏りは推測の手がかりになります。']);if(diffEntries.length===1)tips.push(['◇','難易度に変化を','基礎・標準・発展を混ぜると授業にリズムが出ます。']);if(Object.keys(objectives).length<2)tips.push(['✦','出題形式を追加','空欄・正誤・定義などを組み合わせましょう。']);if(seconds/60>18)tips.push(['◷','プレイ時間を確認','18分を超える構成です。授業時間に合わせて分割もおすすめです。']);if(!tips.length)tips.push(['★','バランス良好','構成上の大きな偏りは見つかりませんでした。']);}
+    $('#analyticsTips').innerHTML=tips.map(function(t){return '<div class="recommend"><span>'+t[0]+'</span><div><b>'+t[1]+'</b><p>'+t[2]+'</p></div></div>';}).join('');
+  }
+
+  function buildAiPrompt(){
+    var source=state.meta.sourceText.trim();return 'あなたは日本の学校教員を支援するクイズ設計者です。以下の資料だけを根拠に、四択クイズを作成してください。\n\n【対象】'+state.meta.school+' '+state.meta.grade+'／'+state.meta.subject+'／'+(state.meta.unit||'単元未設定')+'\n【用途】'+state.meta.purpose+'\n【問題数】'+state.generator.count+'問\n【難易度】'+state.generator.difficulty+'\n\n【必須条件】\n- 問題文は95文字以内\n- 各選択肢は60文字以内\n- 選択肢は4個、正解は1個\n- 誤答は学習者が実際にしそうな誤解にする\n- 資料にない事実を追加しない\n- 曖昧な「最も適切」をできるだけ避ける\n- 出典となる原文をsourceExcerptに入れる\n- Markdownや説明文を付けず、JSON配列だけを返す\n\n【JSON形式】\n[{"text":"問題文","options":["選択肢1","選択肢2","選択肢3","選択肢4"],"correct":0,"difficulty":"基礎・標準・発展のいずれか","objective":"定義・説明など","sourceExcerpt":"根拠原文"}]\n\n【資料】\n'+(source||'（資料本文が未入力です）');
+  }
+  function renderStudio(){$('#aiPrompt').value=buildAiPrompt();}
+  function copyAiPrompt(){renderStudio();var text=$('#aiPrompt').value;if(navigator.clipboard&&navigator.clipboard.writeText){navigator.clipboard.writeText(text).then(function(){toast('AIへの依頼文をコピーしました。');}).catch(function(){fallbackCopy(text);});}else fallbackCopy(text);}
+  function loadAiSample(){$('#aiJson').value=JSON.stringify([{text:'光合成が行われる主な場所はどれですか？',options:['葉緑体','核','液胞','細胞壁'],correct:0,difficulty:'基礎',objective:'定義・説明',sourceExcerpt:'葉緑体は、植物の細胞の中にあり、光合成が行われる場所である。'}],null,2);toast('JSON形式の見本を入力しました。');}
+  function importAiJson(){
+    var raw=$('#aiJson').value.trim();if(!raw){toast('AIのJSON回答を貼り付けてください。','warn');return;}raw=raw.replace(/^```(?:json)?\s*/i,'').replace(/\s*```$/,'');var data=safeParse(raw,null);if(data&&Array.isArray(data.questions))data=data.questions;if(!Array.isArray(data)){toast('JSON配列を読み取れませんでした。説明文や```を取り除いてください。','error');return;}
+    var imported=[];data.slice(0,50).forEach(function(item){if(!item||typeof item.text!=='string'||!Array.isArray(item.options))return;var opts=item.options.slice(0,4).map(function(x){return shortText(String(x),60);});while(opts.length<4)opts.push('');var correct=Number(item.correct);if(correct>=1&&correct<=4&&item.correctOneBased===true)correct--;if(!isFinite(correct)||correct<0||correct>=opts.length)correct=0;imported.push({id:makeId('q'),text:shortText(item.text,95),options:opts,correct:[correct],time:allowedTimes.includes(Number(item.time))?Number(item.time):Number(state.generator.time)||20,difficulty:['基礎','標準','発展'].indexOf(item.difficulty)>=0?item.difficulty:state.generator.difficulty,objective:String(item.objective||'AI生成'),sourceExcerpt:shortText(item.sourceExcerpt||'',180),sourceLabel:state.meta.sourceTitle||'AI Studio',approved:false,memo:'AI Studioから読込',standard:'',assessment:'確認',tags:[]});});
+    if(!imported.length){toast('有効な問題データがありませんでした。','error');return;}var mode=$('input[name="aiImportMode"]:checked').value;if(mode==='replace')state.questions=imported;else state.questions=state.questions.concat(imported);lastQuality=null;queueSave();renderAll();navigate('questions');toast(imported.length+'問を読み込みました。内容と出典を確認してください。');
+  }
+
+  function renderPreview(){
+    var total=state.questions.length;if(previewIndex>=total)previewIndex=Math.max(0,total-1);$('#previewQuizTitle').textContent=state.meta.title||'名称未設定のクイズ';$('#previewNumber').textContent=total?(previewIndex+1)+' / '+total:'0 / 0';$('#previewProgressBar').style.width=total?((previewIndex+1)/total*100)+'%':'0%';
+    $('#previewEmpty').classList.toggle('hidden',total>0);$('#previewContent').classList.toggle('hidden',total===0);if(!total)return;var q=state.questions[previewIndex];$('#previewQuestion').textContent=q.text||'問題文が未入力です';$('#previewOptions').innerHTML=q.options.map(function(opt,i){var cls=previewRevealed?(q.correct.indexOf(i)>=0?' correct':' dim'):'';return '<div class="preview-option'+cls+'"><i>'+String.fromCharCode(65+i)+'</i><span>'+esc(opt||'未入力')+'</span></div>';}).join('');$('#previewSource').textContent=previewRevealed?(q.sourceExcerpt?'根拠：'+q.sourceExcerpt:'根拠は未設定です'):'';$('#previewReveal').textContent=previewRevealed?'正解を隠す':'正解を表示';
+  }
+  function previewMove(delta){if(!state.questions.length)return;previewIndex=(previewIndex+delta+state.questions.length)%state.questions.length;previewRevealed=false;renderPreview();}
+  function previewReveal(){if(!state.questions.length)return;previewRevealed=!previewRevealed;renderPreview();}
+  function previewFullscreen(){var el=$('#previewStage');if(!document.fullscreenElement){if(el.requestFullscreen)el.requestFullscreen().catch(function(){toast('全画面表示を開始できませんでした。','warn');});}else if(document.exitFullscreen)document.exitFullscreen();}
+
+
+  function setProgress(percent,label){$('#docProgress').style.width=clamp(percent,0,100)+'%';$('#docProcessPercent').textContent=Math.round(clamp(percent,0,100))+'%';if(label)$('#docProcessLabel').textContent=label;}
+  function renderDocumentLab(){var mode=state.settings.mode;$('#labModuleStatus').textContent=mode==='connected'?'CONNECTED TOOLS':'LOCAL CORE';if(documentFile)$('#docFileBadge').textContent=documentFile.name;}
+  function selectDocument(file){if(!file)return;documentFile=file;$('#docFileBadge').textContent=file.name;$('#docProcessLabel').textContent=(file.type||file.name.split('.').pop().toUpperCase())+' / '+Math.round(file.size/1024).toLocaleString('ja-JP')+' KB';setProgress(0,'解析待ち：'+file.name);if(file.type&&file.type.indexOf('image/')===0){$('#docMethod').textContent='画像';}toast(file.name+'を選択しました。');}
+  function parseRange(text,max){var set=new Set();var raw=String(text||'').trim();if(!raw){for(var z=1;z<=max;z++)set.add(z);return Array.from(set);}raw.split(',').forEach(function(part){part=part.trim();var m=part.match(/^(\d+)\s*-\s*(\d+)$/);if(m){var a=Math.max(1,Number(m[1])),b=Math.min(max,Number(m[2]));if(a>b){var t=a;a=b;b=t;}for(var i=a;i<=b;i++)set.add(i);}else if(/^\d+$/.test(part)){var n=Number(part);if(n>=1&&n<=max)set.add(n);}});return Array.from(set).sort(function(a,b){return a-b;});}
+  function readFileBuffer(file){return new Promise(function(resolve,reject){var r=new FileReader();r.onload=function(){resolve(r.result);};r.onerror=function(){reject(new Error('ファイルを読み込めませんでした。'));};r.readAsArrayBuffer(file);});}
+  function readFileText(file){return new Promise(function(resolve,reject){var r=new FileReader();r.onload=function(){resolve(String(r.result||''));};r.onerror=function(){reject(new Error('ファイルを読み込めませんでした。'));};r.readAsText(file,'UTF-8');});}
+  async function unzipEntries(buffer){
+    if(typeof DecompressionStream==='undefined')throw new Error('このブラウザはDOCX/PPTXの展開機能に対応していません。最新版のChromeまたはEdgeをお試しください。');
+    var bytes=new Uint8Array(buffer),view=new DataView(buffer),eocd=-1;for(var i=bytes.length-22;i>=Math.max(0,bytes.length-65557);i--){if(view.getUint32(i,true)===0x06054b50){eocd=i;break;}}if(eocd<0)throw new Error('ZIP構造を確認できませんでした。');
+    var total=view.getUint16(eocd+10,true),offset=view.getUint32(eocd+16,true),entries={};var decoder=new TextDecoder('utf-8');
+    for(var e=0;e<total;e++){if(view.getUint32(offset,true)!==0x02014b50)break;var method=view.getUint16(offset+10,true),comp=view.getUint32(offset+20,true),nameLen=view.getUint16(offset+28,true),extraLen=view.getUint16(offset+30,true),commentLen=view.getUint16(offset+32,true),localOffset=view.getUint32(offset+42,true),name=decoder.decode(bytes.slice(offset+46,offset+46+nameLen));var ln=view.getUint16(localOffset+26,true),le=view.getUint16(localOffset+28,true),start=localOffset+30+ln+le,data=bytes.slice(start,start+comp),out;
+      if(method===0)out=data;else if(method===8){var stream=new Blob([data]).stream().pipeThrough(new DecompressionStream('deflate-raw'));out=new Uint8Array(await new Response(stream).arrayBuffer());}else{offset+=46+nameLen+extraLen+commentLen;continue;}entries[name]=out;offset+=46+nameLen+extraLen+commentLen;
+    }return entries;
+  }
+  function xmlText(bytes,mode){var text=new TextDecoder('utf-8').decode(bytes),doc=new DOMParser().parseFromString(text,'application/xml');if(doc.querySelector('parsererror'))return '';if(mode==='docx'){return Array.from(doc.getElementsByTagNameNS('*','p')).map(function(p){return Array.from(p.getElementsByTagNameNS('*','t')).map(function(t){return t.textContent;}).join('');}).filter(Boolean).join('\n');}return Array.from(doc.getElementsByTagNameNS('*','t')).map(function(t){return t.textContent;}).filter(Boolean).join(' ');}
+  async function parseDocx(file){setProgress(20,'Word文書を展開中…');var entries=await unzipEntries(await readFileBuffer(file));if(!entries['word/document.xml'])throw new Error('Word本文を見つけられませんでした。');setProgress(70,'段落と表を抽出中…');documentUnits=1;return xmlText(entries['word/document.xml'],'docx');}
+  async function parsePptx(file){setProgress(15,'PowerPointを展開中…');var entries=await unzipEntries(await readFileBuffer(file));var slides=Object.keys(entries).filter(function(n){return /^ppt\/slides\/slide\d+\.xml$/.test(n);}).sort(function(a,b){return Number(a.match(/slide(\d+)/)[1])-Number(b.match(/slide(\d+)/)[1]);});if(!slides.length)throw new Error('スライド本文を見つけられませんでした。');var selected=parseRange($('#docRange').value,slides.length),parts=[];selected.forEach(function(num){var name='ppt/slides/slide'+num+'.xml';if(entries[name])parts.push('【スライド '+num+'】\n'+xmlText(entries[name],'pptx'));});documentUnits=selected.length;setProgress(82,'スライド文章を整形中…');return parts.join('\n\n');}
+  function loadScriptOnce(url,globalName){return new Promise(function(resolve,reject){if(globalName&&window[globalName]){resolve(window[globalName]);return;}var existing=document.querySelector('script[data-module="'+url+'"]');if(existing){existing.addEventListener('load',function(){resolve(globalName?window[globalName]:true);});existing.addEventListener('error',function(){reject(new Error('外部モジュールを読み込めませんでした。'));});return;}var script=document.createElement('script');script.src=url;script.async=true;script.dataset.module=url;script.onload=function(){resolve(globalName?window[globalName]:true);};script.onerror=function(){reject(new Error('外部モジュールを読み込めませんでした。ネットワークを確認してください。'));};document.head.appendChild(script);});}
+  async function parsePdf(file,forceOcr){if(state.settings.mode!=='connected')throw new Error('PDF直接解析は接続モードで利用できます。「モード・接続」から切り替えてください。');setProgress(8,'PDF解析モジュールを読み込み中…');var pdfjs=await import('https://cdn.jsdelivr.net/npm/pdfjs-dist@6.1.200/build/pdf.mjs');pdfjs.GlobalWorkerOptions.workerSrc='https://cdn.jsdelivr.net/npm/pdfjs-dist@6.1.200/build/pdf.worker.mjs';var data=new Uint8Array(await readFileBuffer(file)),pdf=await pdfjs.getDocument({data:data}).promise,selected=parseRange($('#docRange').value,pdf.numPages),parts=[];documentUnits=selected.length;
+    for(var i=0;i<selected.length;i++){var num=selected[i],page=await pdf.getPage(num);setProgress(15+70*(i/Math.max(1,selected.length)),'PDF '+num+'ページ目を解析中…');if(forceOcr){var viewport=page.getViewport({scale:1.7}),canvas=document.createElement('canvas');canvas.width=viewport.width;canvas.height=viewport.height;await page.render({canvasContext:canvas.getContext('2d'),viewport:viewport}).promise;parts.push('【ページ '+num+'】\n'+await ocrSource(canvas));}else{var content=await page.getTextContent(),text=content.items.map(function(item){return item.str;}).join(' ');parts.push('【ページ '+num+'】\n'+text);}}
+    return parts.join('\n\n');}
+  async function ocrSource(source){if(state.settings.mode!=='connected')throw new Error('画像OCRは接続モードで利用できます。');setProgress(12,'OCRエンジンを読み込み中…');await loadScriptOnce('https://cdn.jsdelivr.net/npm/tesseract.js@7.0.0/dist/tesseract.min.js','Tesseract');var lang=$('#ocrLanguage').value||'jpn+eng';var result=await window.Tesseract.recognize(source,lang,{logger:function(m){if(m&&typeof m.progress==='number')setProgress(15+m.progress*75,'OCR：'+String(m.status||'認識中'));}});documentUnits=1;return result&&result.data?result.data.text:'';}
+  async function analyzeDocument(){if(!documentFile){toast('教材ファイルを選択してください。','warn');return;}var name=documentFile.name.toLowerCase(),mode=$('input[name="docMode"]:checked').value;try{setProgress(3,'ファイルを確認中…');var text='',method='';if(name.endsWith('.docx')){text=await parseDocx(documentFile);method='DOCX';}else if(name.endsWith('.pptx')){text=await parsePptx(documentFile);method='PPTX';}else if(name.endsWith('.pdf')){text=await parsePdf(documentFile,mode==='ocr');method=mode==='ocr'?'PDF OCR':'PDF.js';}else if(documentFile.type&&documentFile.type.indexOf('image/')===0){text=await ocrSource(documentFile);method='OCR';}else{text=await readFileText(documentFile);method='TEXT';documentUnits=1;}text=normalizeText(text);$('#extractedText').value=text;$('#docChars').textContent=text.length.toLocaleString('ja-JP');$('#docUnits').textContent=documentUnits;$('#docMethod').textContent=method;setProgress(100,text?'解析完了':'文章を抽出できませんでした');toast(text?'教材を解析しました。元資料と照合してください。':'文章を抽出できませんでした。','warn');}catch(err){setProgress(0,'解析できませんでした');toast(err&&err.message?err.message:'教材解析で問題が発生しました。','error');}}
+  function clearDocument(){documentFile=null;documentUnits=0;$('#documentFile').value='';$('#extractedText').value='';$('#docFileBadge').textContent='未選択';$('#docChars').textContent='0';$('#docUnits').textContent='0';$('#docMethod').textContent='—';setProgress(0,'ファイルを選んでください');}
+  function useExtracted(){var text=$('#extractedText').value.trim();if(!text){toast('解析結果がありません。','warn');return;}state.meta.sourceText=text;state.meta.sourceTitle=state.meta.sourceTitle||(documentFile?documentFile.name:'解析教材');syncFormFromState();queueSave();toast('解析結果を教材本文に設定しました。');navigate('source');}
+
+  function standardLabel(code){return code==='knowledge'?'知識・技能':code==='thinking'?'思考・判断・表現':code==='attitude'?'主体的に学習に取り組む態度':'未設定';}
+  function autoMapCurriculum(){state.questions.forEach(function(q){var text=q.text+q.objective;if(/理由|比較|読み取|考え|説明|資料|推論|判断/.test(text))q.standard='thinking';else if(/振り返|選択|学び方|改善/.test(text))q.standard='attitude';else q.standard='knowledge';q.assessment=q.standard==='thinking'?'活用':q.standard==='attitude'?'振り返り補助':'確認';});queueSave();renderCurriculum();toast('問題形式から評価観点を仮設定しました。先生が最終確認してください。');}
+  function renderCurriculum(){ensureExtendedState(state);var counts={knowledge:0,thinking:0,attitude:0},mapped=0;state.questions.forEach(function(q){if(counts[q.standard]!==undefined){counts[q.standard]++;mapped++;}});$('#currKnowledgeCount').textContent=counts.knowledge+'問';$('#currThinkingCount').textContent=counts.thinking+'問';$('#currAttitudeCount').textContent=counts.attitude+'問';$('#currMappedBadge').textContent=mapped+' / '+state.questions.length;$('#goalKnowledge').value=state.curriculum.goals.knowledge||'';$('#goalThinking').value=state.curriculum.goals.thinking||'';$('#goalAttitude').value=state.curriculum.goals.attitude||'';var total=state.questions.length||1,colors={knowledge:'#6268e6',thinking:'#22b5a5',attitude:'#ef6b83'};$('#curriculumSummary').innerHTML=['knowledge','thinking','attitude'].map(function(k){return '<div class="curr-sum-row"><span>'+standardLabel(k)+'</span><div class="curr-sum-track"><div class="curr-sum-fill" style="width:'+(counts[k]/total*100)+'%;background:'+colors[k]+'"></div></div><strong>'+counts[k]+'</strong></div>';}).join('');var map=$('#curriculumMap');if(!state.questions.length){map.innerHTML='<div class="empty">対応付ける問題がありません。</div>';return;}map.innerHTML=state.questions.map(function(q,i){return '<div class="mapping-row"><span class="map-index">'+(i+1)+'</span><p>'+esc(q.text||'未入力')+'</p><select data-map-standard="'+esc(q.id)+'"><option value="">観点を選択</option><option value="knowledge" '+(q.standard==='knowledge'?'selected':'')+'>知識・技能</option><option value="thinking" '+(q.standard==='thinking'?'selected':'')+'>思考・判断・表現</option><option value="attitude" '+(q.standard==='attitude'?'selected':'')+'>主体的な態度</option></select><select data-map-assessment="'+esc(q.id)+'"><option '+(q.assessment==='確認'?'selected':'')+'>確認</option><option '+(q.assessment==='活用'?'selected':'')+'>活用</option><option '+(q.assessment==='振り返り補助'?'selected':'')+'>振り返り補助</option></select></div>';}).join('');}
+  function exportCurriculum(){if(!state.questions.length){toast('問題がありません。','warn');return;}var rows=[['No','問題文','評価観点','評価用途','単元','教科']].concat(state.questions.map(function(q,i){return [i+1,q.text,standardLabel(q.standard),q.assessment||'',state.meta.unit,state.meta.subject];}));var csv='\ufeff'+rows.map(function(r){return r.map(csvCell).join(',');}).join('\r\n');downloadBlob(new Blob([csv],{type:'text/csv;charset=utf-8'}),fileSafe(state.meta.title)+'_評価対応表.csv');}
+
+  function parseDelimited(text,delimiter){var rows=[],row=[],field='',quoted=false;for(var i=0;i<text.length;i++){var ch=text[i],next=text[i+1];if(ch==='"'){if(quoted&&next==='"'){field+='"';i++;}else quoted=!quoted;}else if(ch===delimiter&&!quoted){row.push(field);field='';}else if((ch==='\n'||ch==='\r')&&!quoted){if(ch==='\r'&&next==='\n')i++;row.push(field);if(row.some(function(x){return x!=='';}))rows.push(row);row=[];field='';}else field+=ch;}row.push(field);if(row.some(function(x){return x!=='';}))rows.push(row);return rows;}
+  function recordsFromRows(rows){if(rows.length<2)return [];var headers=rows[0].map(function(h){return String(h).trim().toLowerCase();});function ix(names){for(var n=0;n<names.length;n++){var i=headers.indexOf(names[n]);if(i>=0)return i;}return -1;}var si=ix(['student','name','生徒','氏名']),qi=ix(['question','question number','q','問題','問題番号']),seli=ix(['selected','answer','response','選択','回答']),ci=ix(['correct','is correct','正誤']);if(qi<0||seli<0)return [];return rows.slice(1).map(function(r,index){var q=Number(r[qi]);if(!isFinite(q)){var m=String(r[qi]).match(/\d+/);q=m?Number(m[0]):0;}var selected=String(r[seli]||'').trim(),correctVal=ci>=0?String(r[ci]||'').toLowerCase():'';var correct=['true','1','yes','correct','正解','○'].indexOf(correctVal)>=0;return {student:si>=0?String(r[si]||'生徒'+(index+1)):'生徒'+(index+1),question:q,selected:selected,correct:correct};}).filter(function(r){return r.question>0;});}
+  function readResults(file){if(!file)return;var reader=new FileReader();reader.onload=function(){var text=String(reader.result||''),records=[];if(file.name.toLowerCase().endsWith('.json')){var data=safeParse(text,null);if(Array.isArray(data))records=data;else if(data&&Array.isArray(data.records))records=data.records;}else{var delim=file.name.toLowerCase().endsWith('.tsv')?'\t':',';records=recordsFromRows(parseDelimited(text,delim));}records=records.map(function(r,i){return {student:String(r.student||'生徒'+(i+1)),question:Number(r.question),selected:String(r.selected==null?'':r.selected),correct:r.correct===true||String(r.correct).toLowerCase()==='true'||String(r.correct)==='1'};}).filter(function(r){return r.question>0;});if(!records.length){toast('回答データを読み取れませんでした。テンプレート形式を確認してください。','error');return;}state.results={records:records,source:file.name};queueSave();renderInsights();toast(records.length+'件の回答を読み込みました。');};reader.onerror=function(){toast('回答データを読み込めませんでした。','error');};reader.readAsText(file,'UTF-8');}
+  function loadResultDemo(){if(!state.questions.length){var demo='光合成とは、植物が光のエネルギーを使って二酸化炭素と水からデンプンなどの養分をつくるはたらきである。\n植物は光合成で二酸化炭素を取り入れ、酸素を放出する。\n葉緑体は光合成が行われる場所である。\n呼吸は昼も夜も行われる。';state.meta.title='中2理科 光合成と呼吸';state.meta.subject='理科';state.meta.grade='2年';state.meta.unit='植物の体のつくりとはたらき';state.meta.sourceTitle='分析用サンプル教材';state.meta.sourceText=demo;state.questions=shuffle(buildCandidates(demo)).slice(0,8);}var records=[];var count=Math.max(1,state.questions.length);for(var sidx=1;sidx<=18;sidx++){for(var qidx=1;qidx<=count;qidx++){var accuracy=Math.max(.28,.9-qidx*.045),correct=Math.random()<accuracy,selected=correct?String((state.questions[qidx-1].correct[0]||0)+1):String(((state.questions[qidx-1].correct[0]||0)+1)%4+1);records.push({student:'生徒'+sidx,question:qidx,selected:selected,correct:correct});}}state.results={records:records,source:'分析サンプル'};queueSave();renderInsights();toast('サンプル回答データを作成しました。');}
+  function resultStats(){var records=state.results.records||[],byQ={};records.forEach(function(r){if(!byQ[r.question])byQ[r.question]={total:0,correct:0,choices:{}};var o=byQ[r.question];o.total++;if(r.correct)o.correct++;o.choices[r.selected]=(o.choices[r.selected]||0)+1;});return {records:records,byQ:byQ};}
+  function renderInsights(){ensureExtendedState(state);var data=resultStats(),records=data.records,byQ=data.byQ,students=new Set(records.map(function(r){return r.student;})),correct=records.filter(function(r){return r.correct;}).length,qStats=Object.keys(byQ).map(function(k){var o=byQ[k];return {num:Number(k),total:o.total,correct:o.correct,rate:o.total?o.correct/o.total:0,choices:o.choices};}).sort(function(a,b){return a.num-b.num;});$('#resultAttempts').textContent=records.length;$('#resultAccuracy').textContent=records.length?Math.round(correct/records.length*100)+'%':'—';$('#resultReview').textContent=qStats.filter(function(x){return x.rate<.6;}).length;$('#resultStudents').textContent=students.size;$('#resultSourceBadge').textContent=state.results.source||'データ未読込';var perf=$('#performanceChart');perf.innerHTML=qStats.length?qStats.map(function(x){return '<div class="performance-row"><span>問'+x.num+'</span><div class="performance-track"><div class="performance-fill" style="width:'+(x.rate*100)+'%"></div></div><b>'+Math.round(x.rate*100)+'%</b></div>';}).join(''):'<div class="empty">回答データを読み込むと表示されます。</div>';
+    var weak=qStats.filter(function(x){return x.rate<.75;}).sort(function(a,b){return a.rate-b.rate;}).slice(0,5);$('#nextQuestionTips').innerHTML=weak.length?weak.map(function(x){var q=state.questions[x.num-1];return '<div class="next-tip"><b>問'+x.num+'を再設計：'+esc(q?shortText(q.text,45):'対応問題なし')+'</b><p>正答率'+Math.round(x.rate*100)+'%。誤答理由を確認する類題を追加します。</p><button class="btn btn-soft btn-small" data-action="create-followup" data-question="'+x.num+'">確認問題を追加</button></div>';}).join(''):'<div class="empty">要復習問題はまだありません。</div>';
+    var cards=[];qStats.forEach(function(x){var wrongChoices=Object.keys(x.choices).map(function(k){return {choice:k,count:x.choices[k]};}).sort(function(a,b){return b.count-a.count;});var q=state.questions[x.num-1];if(wrongChoices.length&&q){var top=wrongChoices.find(function(c){var n=Number(c.choice);return !(n>=1&&q.correct.indexOf(n-1)>=0);});if(top)cards.push({num:x.num,text:q.options[Number(top.choice)-1]||top.choice,count:top.count,total:x.total});}});$('#distractorInsights').innerHTML=cards.length?cards.slice(0,9).map(function(c){return '<div class="distractor-card"><span>QUESTION '+c.num+'</span><b>「'+esc(shortText(c.text,38))+'」</b><p>'+c.count+'件が選択。誤概念として次回問題へ活用できます。</p></div>';}).join(''):'<div class="empty" style="grid-column:1/-1">誤答選択肢のデータがありません。</div>';}
+  function createFollowup(num){var q=state.questions[num-1];if(!q){toast('対応する問題がありません。','warn');return;}var copy=clone(q);copy.id=makeId('q');copy.text=shortText('もう一度確認します。'+q.text,95);copy.approved=false;copy.difficulty=q.difficulty==='基礎'?'標準':q.difficulty;copy.objective='誤答フォロー';copy.memo='回答分析から作成';state.questions.push(copy);queueSave();renderAll();toast('誤答フォロー問題を追加しました。');}
+  function exportResultTemplate(){var csv='\ufeffstudent,question,selected,correct\r\n生徒A,1,2,true\r\n生徒A,2,1,false';downloadBlob(new Blob([csv],{type:'text/csv;charset=utf-8'}),'QuizCraft_EDU_回答データテンプレート.csv');}
+
+  function getBank(){var raw=null;try{raw=localStorage.getItem(STORAGE_BANK);}catch(e){}var list=safeParse(raw,[]);return Array.isArray(list)?list:[];}
+  function setBank(list){try{localStorage.setItem(STORAGE_BANK,JSON.stringify(list.slice(0,1000)));return true;}catch(e){toast('問題バンクを保存できませんでした。共有パックで退避してください。','error');return false;}}
+  function saveToBank(approvedOnly){var targets=state.questions.filter(function(q){return !approvedOnly||q.approved;});if(!targets.length){toast(approvedOnly?'承認済み問題がありません。':'登録する問題がありません。','warn');return;}var bank=getBank(),added=0;targets.forEach(function(q){var key=q.text.replace(/\s/g,'');if(bank.some(function(b){return b.text.replace(/\s/g,'')===key&&key;}))return;var item=clone(q);item.bankId=makeId('bank');item.savedAt=new Date().toISOString();item.meta={subject:state.meta.subject,grade:state.meta.grade,school:state.meta.school,unit:state.meta.unit,author:state.collaboration.teacher||'',project:state.meta.title};bank.unshift(item);added++;});if(setBank(bank)){renderBank();toast(added+'問を問題バンクへ登録しました。');}}
+  function renderBank(){var bank=getBank(),term=$('#bankSearch')?$('#bankSearch').value.trim().toLowerCase():'',subject=$('#bankSubject')?$('#bankSubject').value:'all',grade=$('#bankGrade')?$('#bankGrade').value:'all';var subjects=Array.from(new Set(bank.map(function(b){return b.meta&&b.meta.subject;}).filter(Boolean))).sort(),grades=Array.from(new Set(bank.map(function(b){return b.meta&&b.meta.grade;}).filter(Boolean))).sort();var ss=$('#bankSubject'),gs=$('#bankGrade');if(ss){var oldS=ss.value;ss.innerHTML='<option value="all">全教科</option>'+subjects.map(function(x){return '<option '+(x===oldS?'selected':'')+'>'+esc(x)+'</option>';}).join('');}if(gs){var oldG=gs.value;gs.innerHTML='<option value="all">全学年</option>'+grades.map(function(x){return '<option '+(x===oldG?'selected':'')+'>'+esc(x)+'</option>';}).join('');}if(!$('#bankList'))return;var filtered=bank.filter(function(b){var hay=(b.text+' '+b.options.join(' ')+' '+((b.meta&&b.meta.unit)||'')+' '+(b.tags||[]).join(' ')).toLowerCase();return (!term||hay.indexOf(term)>=0)&&(subject==='all'||(b.meta&&b.meta.subject===subject))&&(grade==='all'||(b.meta&&b.meta.grade===grade));});$('#bankCount').textContent=bank.length;$('#bankSubjects').textContent=subjects.length;$('#bankSelected').textContent=bankSelection.size;$('#bankList').innerHTML=filtered.length?filtered.map(function(b){return '<article class="bank-card"><input type="checkbox" data-bank-select="'+esc(b.bankId)+'" '+(bankSelection.has(b.bankId)?'checked':'')+'><div><h3>'+esc(b.text)+'</h3><p>'+esc((b.meta&&b.meta.subject)||'')+'・'+esc((b.meta&&b.meta.grade)||'')+' ／ '+esc((b.meta&&b.meta.unit)||'単元未設定')+'</p><div class="bank-tags"><span>'+esc(b.difficulty||'標準')+'</span><span>'+esc(standardLabel(b.standard))+'</span><span>'+esc(b.objective||'未分類')+'</span></div><div class="bank-actions"><button class="btn btn-soft btn-small" data-action="bank-insert-one" data-id="'+esc(b.bankId)+'">現在のクイズへ</button><button class="btn btn-danger btn-small" data-action="bank-delete" data-id="'+esc(b.bankId)+'">削除</button></div></div></article>';}).join(''):'<div class="empty" style="grid-column:1/-1">条件に一致する問題がありません。</div>';}
+  function insertBankItems(ids){var bank=getBank(),items=bank.filter(function(b){return ids.indexOf(b.bankId)>=0;}).map(function(b){var q=clone(b);q.id=makeId('q');delete q.bankId;delete q.savedAt;delete q.meta;q.approved=false;return q;});if(!items.length){toast('問題を選択してください。','warn');return;}state.questions=state.questions.concat(items);queueSave();renderAll();toast(items.length+'問を現在のクイズへ追加しました。');}
+  function exportBank(){var pack={format:'QuizCraftEDU.BankPack',version:1,exportedAt:new Date().toISOString(),school:'',questions:getBank()};downloadBlob(new Blob([JSON.stringify(pack,null,2)],{type:'application/json'}),'QuizCraft_EDU_校内問題バンク.qcepack');}
+  function importBankPack(file){if(!file)return;var r=new FileReader();r.onload=function(){var pack=safeParse(String(r.result||''),null),incoming=pack&&Array.isArray(pack.questions)?pack.questions:(Array.isArray(pack)?pack:[]);if(!incoming.length){toast('問題バンク共有パックを読み取れませんでした。','error');return;}var bank=getBank(),added=0;incoming.forEach(function(item){if(!item.text||!Array.isArray(item.options))return;var key=item.text.replace(/\s/g,'');if(bank.some(function(b){return b.text.replace(/\s/g,'')===key;}))return;item=clone(item);item.bankId=makeId('bank');bank.push(item);added++;});setBank(bank);renderBank();toast(added+'問を共有パックから追加しました。');};r.readAsText(file,'UTF-8');}
+
+  function renderCollab(){ensureExtendedState(state);$('#teacherName').value=state.collaboration.teacher||'';$('#commentCountBadge').textContent=state.collaboration.comments.length+'件';$('#versionList').innerHTML=state.collaboration.versions.length?state.collaboration.versions.map(function(v,i){return '<div class="version-item"><div><b>'+esc(v.note||'スナップショット')+'</b><p>'+esc(v.author||'名称未設定')+' ／ '+v.count+'問</p><small>'+esc(formatDate(v.at))+'</small></div><button class="btn btn-paper btn-small" data-action="restore-version" data-index="'+i+'">復元</button></div>';}).join(''):'<div class="empty">保存したバージョンはありません。</div>';$('#commentList').innerHTML=state.collaboration.comments.length?state.collaboration.comments.map(function(c,i){return '<div class="comment-item"><b>'+esc(c.author||'匿名')+'</b><p>'+esc(c.text)+'</p><small>'+esc(formatDate(c.at))+'</small> <button class="btn btn-danger btn-small" data-action="delete-comment" data-index="'+i+'">削除</button></div>';}).join(''):'<div class="empty">コメントはありません。</div>';}
+  function createVersion(){var note=$('#versionNote').value.trim()||'変更記録',author=$('#teacherName').value.trim()||'匿名';state.collaboration.teacher=author;state.collaboration.versions.unshift({at:new Date().toISOString(),author:author,note:note,count:state.questions.length,snapshot:{meta:clone(state.meta),generator:clone(state.generator),curriculum:clone(state.curriculum),questions:clone(state.questions)}});state.collaboration.versions=state.collaboration.versions.slice(0,12);$('#versionNote').value='';queueSave();renderCollab();toast('編集スナップショットを保存しました。');}
+  function restoreVersion(index){var v=state.collaboration.versions[index];if(!v||!v.snapshot)return;confirmAction('このバージョンを復元しますか？',formatDate(v.at)+'の「'+v.note+'」へ戻します。現在版は自動保存されています。',function(){state.meta=clone(v.snapshot.meta);state.generator=clone(v.snapshot.generator);state.curriculum=clone(v.snapshot.curriculum);state.questions=clone(v.snapshot.questions);ensureExtendedState(state);syncFormFromState();queueSave();renderAll();toast('バージョンを復元しました。');});}
+  function addComment(){var text=$('#commentText').value.trim();if(!text){toast('コメントを入力してください。','warn');return;}var author=$('#teacherName').value.trim()||state.collaboration.teacher||'匿名';state.collaboration.teacher=author;state.collaboration.comments.unshift({at:new Date().toISOString(),author:author,text:text});state.collaboration.comments=state.collaboration.comments.slice(0,80);$('#commentText').value='';queueSave();renderCollab();}
+  function connectRoom(){var room=$('#roomCode').value.trim();if(!room){toast('ルームコードを入力してください。','warn');return;}if(typeof BroadcastChannel==='undefined'){toast('このブラウザはローカル共同編集ルームに対応していません。','error');return;}if(collabChannel)collabChannel.close();collabChannel=new BroadcastChannel('quizcraft_edu_'+room);collabChannel.onmessage=function(event){var msg=event.data;if(!msg||msg.sender===state.id)return;if(msg.type==='project'){pendingRemote=msg.project;$('#remoteTitle').textContent=(msg.author||'別の編集者')+'さんから共同編集版';$('#remoteDetail').textContent=(pendingRemote.meta&&pendingRemote.meta.title||'名称未設定')+' ／ '+(pendingRemote.questions||[]).length+'問 ／ '+formatDate(msg.at);$('#remoteNotice').classList.remove('hidden');toast('共同編集版を受信しました。');}if(msg.type==='hello')toast((msg.author||'編集者')+'さんがルームに参加しました。');};$('#collabStatus').textContent='ROOM: '+room;$('#collabStatus').classList.add('online');collabChannel.postMessage({type:'hello',sender:state.id,author:$('#teacherName').value.trim()||'編集者'});toast('ローカル共同編集ルームへ接続しました。');}
+  function broadcastProject(){if(!collabChannel){toast('先にルームへ接続してください。','warn');return;}collabChannel.postMessage({type:'project',sender:state.id,author:$('#teacherName').value.trim()||'編集者',at:new Date().toISOString(),project:clone(state)});toast('現在版をルームへ送信しました。');}
+  function acceptRemote(){if(!pendingRemote)return;var keepSettings=clone(state.settings),keepCollab=clone(state.collaboration);state=clone(pendingRemote);ensureExtendedState(state);state.settings=keepSettings;state.collaboration=keepCollab;pendingRemote=null;$('#remoteNotice').classList.add('hidden');syncFormFromState();queueSave();renderAll();toast('共同編集版を受け入れました。');}
+
+  function renderDeploy(){ensureExtendedState(state);var mode=state.settings.mode||'local';var radio=$('input[name="workspaceMode"][value="'+mode+'"]');if(radio)radio.checked=true;$$('[data-config]').forEach(function(el){el.value=state.settings[el.dataset.config]||'';});$$('[data-gemini-model]').forEach(function(el){if(Array.from(el.options).some(function(o){return o.value===state.settings.aiModel;}))el.value=state.settings.aiModel;});$('#moduleModeBadge').textContent=mode==='connected'?'CONNECTED':'LOCAL';$('#dashModeName').textContent=mode==='connected'?'接続モード':'完全ローカルモード';$('#dashModeText').textContent=mode==='connected'?'必要なときだけPDF・OCR・先生個人のGemini APIへ接続します。':'教材と問題データを外部送信せず、このブラウザ内で処理します。';$('#dashModeIcon').textContent=mode==='connected'?'⌁':'◉';}
+  function setWorkspaceMode(mode){state.settings.mode=mode==='connected'?'connected':'local';queueSave();renderDeploy();renderDocumentLab();toast(mode==='connected'?'接続モードへ切り替えました。外部通信は各機能を実行した時だけ行います。':'完全ローカルモードへ切り替えました。');}
+  async function testDocumentModules(){if(state.settings.mode!=='connected'){toast('先に接続モードへ切り替えてください。','warn');return;}try{$('#pdfModuleText').textContent='読込テスト中…';await import('https://cdn.jsdelivr.net/npm/pdfjs-dist@6.1.200/build/pdf.mjs');$('#pdfModuleText').textContent='PDF.js 読込OK';$('#ocrModuleText').textContent='読込テスト中…';await loadScriptOnce('https://cdn.jsdelivr.net/npm/tesseract.js@7.0.0/dist/tesseract.min.js','Tesseract');$('#ocrModuleText').textContent='Tesseract.js 読込OK';toast('PDF・OCRモジュールを読み込めました。');}catch(err){toast(err.message||'モジュールテストに失敗しました。','error');}}
+  function geminiHeaders(){return {'Content-Type':'application/json','x-goog-api-key':sessionSecrets.geminiKey};}
+  function setGeminiStatus(kind,title,detail){['#studioGeminiStatus','#deployGeminiStatus'].forEach(function(sel){var el=$(sel);if(!el)return;el.classList.remove('ok','error');if(kind)el.classList.add(kind);$('b',el).textContent=title;$('small',el).textContent=detail||'';});}
+  function syncGeminiInputs(source){var value=source?source.value:sessionSecrets.geminiKey;sessionSecrets.geminiKey=String(value||'').trim();['#studioGeminiKey','#geminiApiKey'].forEach(function(sel){var el=$(sel);if(el&&el!==source)el.value=sessionSecrets.geminiKey;});var remember=($('#rememberGeminiSession')&&$('#rememberGeminiSession').checked)||($('#rememberGeminiDeploy')&&$('#rememberGeminiDeploy').checked);try{if(remember&&sessionSecrets.geminiKey)sessionStorage.setItem('quizcraft_gemini_key',sessionSecrets.geminiKey);else sessionStorage.removeItem('quizcraft_gemini_key');}catch(e){}if(!sessionSecrets.geminiKey)setGeminiStatus('','未接続','キーは保存されていません');}
+  function syncGeminiModel(value){if(!value)return;state.settings.aiModel=value;$$('[data-gemini-model]').forEach(function(el){if(Array.from(el.options).some(function(o){return o.value===value;}))el.value=value;});queueSave();}
+  function populateGeminiModels(models){var current=state.settings.aiModel||'gemini-3.6-flash';$$('[data-gemini-model]').forEach(function(select){var html=models.map(function(m){var id=String(m.name||'').replace(/^models\//,'');return '<option value="'+esc(id)+'">'+esc(m.displayName||id)+'</option>';}).join('');if(html)select.innerHTML=html;if(Array.from(select.options).some(function(o){return o.value===current;}))select.value=current;else if(select.options.length){select.selectedIndex=0;current=select.value;}});syncGeminiModel(current);}
+  function geminiErrorMessage(status,data){var message=data&&data.error&&data.error.message?data.error.message:'HTTP '+status;if(status===400)return '入力内容またはモデル設定を確認してください。 '+message;if(status===403)return 'APIキーが無効、制限対象、または権限不足の可能性があります。 '+message;if(status===429)return 'APIの利用上限またはレート制限に達しました。Google AI Studioの使用量を確認してください。';return message;}
+  async function fetchWithTimeout(url,options,ms){var controller=new AbortController(),timer=setTimeout(function(){controller.abort();},ms||90000);options=Object.assign({},options,{signal:controller.signal});try{return await fetch(url,options);}finally{clearTimeout(timer);}}
+  async function testGemini(){syncGeminiInputs();if(!sessionSecrets.geminiKey){toast('Google AI StudioのAPIキーを入力してください。','warn');return;}setGeminiStatus('','接続確認中…','利用可能なモデルを取得しています');try{var res=await fetchWithTimeout('https://generativelanguage.googleapis.com/v1beta/models?pageSize=100',{headers:{'x-goog-api-key':sessionSecrets.geminiKey}},30000),data=await res.json();if(!res.ok)throw new Error(geminiErrorMessage(res.status,data));var models=(data.models||[]).filter(function(m){return (m.supportedGenerationMethods||m.supportedActions||[]).indexOf('generateContent')>=0&&/^models\/gemini-/i.test(m.name||'')&&!/(image|tts|live|embedding|aqa)/i.test(m.name||'');}).sort(function(a,b){var af=/3\.7-flash$/.test(a.name)?0:/flash/i.test(a.name)?1:2,bf=/3\.7-flash$/.test(b.name)?0:/flash/i.test(b.name)?1:2;return af-bf||String(a.displayName).localeCompare(String(b.displayName),'ja');});if(!models.length)throw new Error('テキスト生成対応のGeminiモデルを取得できませんでした。');populateGeminiModels(models);state.settings.mode='connected';queueSave();renderDeploy();setGeminiStatus('ok','Gemini API 接続OK',models.length+'モデルを確認 ／ '+state.settings.aiModel);toast('Google Gemini APIへ接続できました。');}catch(err){var msg=err.name==='AbortError'?'接続がタイムアウトしました。':err.message;setGeminiStatus('error','接続できません',msg);toast('Gemini接続失敗：'+msg,'error');}}
+  function extractInteractionText(data){if(data&&data.output_text)return String(data.output_text);var texts=[];(data&&data.steps||[]).forEach(function(step){if(step.type==='model_output')(step.content||[]).forEach(function(item){if(item.type==='text'&&item.text)texts.push(item.text);});});if(!texts.length){var detail=data&&data.error&&data.error.message?data.error.message:'Geminiから回答本文が返りませんでした。';throw new Error(detail);}return texts.join('').trim();}
+  function setGeminiBusy(busy){var btn=$('#geminiGenerateButton');if(!btn)return;btn.classList.toggle('is-busy',busy);btn.disabled=busy;btn.textContent=busy?'Geminiが作成中…':'Geminiで問題生成';}
+  async function geminiGenerate(){syncGeminiInputs();if(!sessionSecrets.geminiKey){toast('Google AI StudioのAPIキーを入力してください。','warn');$('#studioGeminiKey').focus();return;}if(!state.meta.sourceText.trim()){toast('先に教材本文を入力してください。','warn');navigate('source');return;}var model=state.settings.aiModel||'gemini-3.6-flash';state.settings.mode='connected';queueSave();renderDeploy();setGeminiBusy(true);setGeminiStatus('','生成中…',model+'へ教材と依頼文を送信しています');var schema={type:'array',items:{type:'object',properties:{text:{type:'string'},options:{type:'array',items:{type:'string'}},correct:{type:'integer'},difficulty:{type:'string'},objective:{type:'string'},sourceExcerpt:{type:'string'}},required:['text','options','correct','sourceExcerpt']}};try{var body={model:model,input:buildAiPrompt(),response_format:[{type:'text',mime_type:'application/json',schema:schema}]},res=await fetchWithTimeout('https://generativelanguage.googleapis.com/v1/interactions',{method:'POST',headers:geminiHeaders(),body:JSON.stringify(body)},120000),data=await res.json();if(!res.ok)throw new Error(geminiErrorMessage(res.status,data));var text=extractInteractionText(data).replace(/^```(?:json)?\s*/i,'').replace(/\s*```$/,'').trim(),parsed=safeParse(text,null);if(parsed&&Array.isArray(parsed.questions))parsed=parsed.questions;if(Array.isArray(parsed)){$('#aiJson').value=JSON.stringify(parsed,null,2);setGeminiStatus('ok','生成完了',parsed.length+'問の候補を受信しました');toast(parsed.length+'問の候補を受信しました。確認後に読み込んでください。');}else{$('#aiJson').value=text;setGeminiStatus('error','形式を要確認','回答は受信しましたがJSON配列として確認できません');toast('回答を受信しましたが、JSON形式の確認が必要です。','warn');}}catch(err){var msg=err.name==='AbortError'?'生成がタイムアウトしました。問題数や教材の長さを減らしてください。':err.message;setGeminiStatus('error','生成できません',msg);toast('Gemini生成失敗：'+msg,'error');}finally{setGeminiBusy(false);}}
+  function clearGeminiKey(){sessionSecrets.geminiKey='';['#studioGeminiKey','#geminiApiKey'].forEach(function(sel){var el=$(sel);if(el)el.value='';});['#rememberGeminiSession','#rememberGeminiDeploy'].forEach(function(sel){var el=$(sel);if(el)el.checked=false;});try{sessionStorage.removeItem('quizcraft_gemini_key');}catch(e){}setGeminiStatus('','未接続','APIキーを消去しました');toast('Gemini APIキーをこのページから消去しました。');}
+  function toggleGeminiKey(targetId,button){var input=document.getElementById(targetId);if(!input)return;input.type=input.type==='password'?'text':'password';button.textContent=input.type==='password'?'表示':'隠す';}
+  function restoreGeminiSession(){try{var key=sessionStorage.getItem('quizcraft_gemini_key')||'';if(key){sessionSecrets.geminiKey=key;$('#studioGeminiKey').value=key;$('#geminiApiKey').value=key;$('#rememberGeminiSession').checked=true;$('#rememberGeminiDeploy').checked=true;setGeminiStatus('','キー復元済み','接続確認を実行してください');}}catch(e){}}
+  async function syncProject(method){if(state.settings.mode!=='connected'){toast('同期は接続モードで利用できます。','warn');return;}var base=state.settings.syncUrl,id=state.settings.syncProjectId;if(!base||!id){toast('同期URLとプロジェクトIDを設定してください。','warn');return;}var url=base.replace(/\/$/,'')+'/'+encodeURIComponent(id);$('#syncStatus').className='sync-status';$('#syncStatus').textContent='通信中…';try{if(method==='push'){var res=await fetch(url,{method:'PUT',headers:{'Content-Type':'application/json'},body:JSON.stringify({project:state,updatedAt:new Date().toISOString()})});if(!res.ok)throw new Error('HTTP '+res.status);$('#syncStatus').textContent='サーバーへ保存しました '+new Date().toLocaleTimeString('ja-JP');}else{var get=await fetch(url);if(!get.ok)throw new Error('HTTP '+get.status);var data=await get.json(),remote=data.project||data;if(!remote||!remote.meta||!Array.isArray(remote.questions))throw new Error('プロジェクト形式ではありません');pendingRemote=remote;$('#remoteTitle').textContent='同期サーバーから取得';$('#remoteDetail').textContent=(remote.meta.title||'名称未設定')+' ／ '+remote.questions.length+'問';$('#remoteNotice').classList.remove('hidden');navigate('collab');}$('#syncStatus').classList.add('ok');}catch(err){$('#syncStatus').textContent='接続失敗：'+err.message;$('#syncStatus').classList.add('error');toast('同期できませんでした。','error');}}
+  function copyServerSpec(){var spec='QuizCraft EDU optional sync specification\nPUT /api/projects/:id body: {project, updatedAt}\nGET /api/projects/:id response: {project}\nCORS: allow the QuizCraft EDU origin';fallbackCopy(spec);}
+
+  function renderAll(){ensureExtendedState(state);renderSummary();renderQuestions();renderQuality();renderCurriculum();renderAnalytics();renderInsights();renderStudio();renderPreview();renderExport();renderProjects();renderBank();renderCollab();renderDeploy();}
+
+  document.addEventListener('input',function(e){
+    var bind=e.target.dataset.bind;if(bind){var value=e.target.type==='number'?Number(e.target.value):e.target.value;setPath(state,bind,value);if(bind==='meta.sourceText')updateSourceInsights();lastQuality=null;queueSave();}
+    if(e.target.dataset.qAction)handleQuestionChange(e.target);
+    if(e.target.id==='questionSearch')renderQuestions();
+    if(e.target.id==='bankSearch')renderBank();
+    if(e.target.id==='teacherName'){state.collaboration.teacher=e.target.value;queueSave();}
+  });
+  document.addEventListener('change',function(e){
+    if(e.target.dataset.genType){state.generator.types[e.target.dataset.genType]=e.target.checked;queueSave();}
+    if(e.target.dataset.curriculum){state.curriculum.goals[e.target.dataset.curriculum]=e.target.value;queueSave();}
+    if(e.target.dataset.mapStandard){var mq=findQuestion(e.target.dataset.mapStandard);if(mq){mq.standard=e.target.value;queueSave();renderCurriculum();}}
+    if(e.target.dataset.mapAssessment){var aq=findQuestion(e.target.dataset.mapAssessment);if(aq){aq.assessment=e.target.value;queueSave();}}
+    if(e.target.dataset.config){state.settings[e.target.dataset.config]=e.target.value;queueSave();}
+    if(e.target.name==='workspaceMode')setWorkspaceMode(e.target.value);
+    if(e.target.id==='studioGeminiKey'||e.target.id==='geminiApiKey')syncGeminiInputs(e.target);
+    if(e.target.dataset.geminiModel)syncGeminiModel(e.target.value);
+    if(e.target.id==='rememberGeminiSession'||e.target.id==='rememberGeminiDeploy'){var checked=e.target.checked;$('#rememberGeminiSession').checked=checked;$('#rememberGeminiDeploy').checked=checked;syncGeminiInputs();}
+    if(e.target.dataset.bankSelect){if(e.target.checked)bankSelection.add(e.target.dataset.bankSelect);else bankSelection.delete(e.target.dataset.bankSelect);renderBank();}
+    if(e.target.dataset.qAction)handleQuestionChange(e.target);
+    if(e.target.id==='questionFilter')renderQuestions();
+    if(e.target.id==='sourceFile'){readTextFile(e.target.files[0]);e.target.value='';}
+    if(e.target.id==='jsonFile'){readJsonProject(e.target.files[0]);e.target.value='';}
+    if(e.target.id==='documentFile'){selectDocument(e.target.files[0]);e.target.value='';}
+    if(e.target.id==='resultsFile'){readResults(e.target.files[0]);e.target.value='';}
+    if(e.target.id==='bankPackFile'){importBankPack(e.target.files[0]);e.target.value='';}
+    if(e.target.id==='bankSubject'||e.target.id==='bankGrade')renderBank();
+  });
+  document.addEventListener('click',function(e){
+    var qBtn=e.target.closest('[data-q-action]');if(qBtn&&qBtn.tagName==='BUTTON'){handleQuestionButton(qBtn);return;}
+    var btn=e.target.closest('[data-action]');if(!btn)return;var action=btn.dataset.action;
+    if(action==='navigate')navigate(btn.dataset.page);
+    else if(action==='toggle-menu')$('#sidebar').classList.toggle('open');
+    else if(action==='new-project')newProject();
+    else if(action==='save-project')saveProject();
+    else if(action==='load-demo')loadDemo();
+    else if(action==='generate')generateQuestions();
+    else if(action==='add-question'){addQuestion();navigate('questions');}
+    else if(action==='run-quality')runQuality(true);
+    else if(action==='choose-document')$('#documentFile').click();
+    else if(action==='analyze-document')analyzeDocument();
+    else if(action==='clear-document')clearDocument();
+    else if(action==='copy-extracted')fallbackCopy($('#extractedText').value);
+    else if(action==='use-extracted')useExtracted();
+    else if(action==='auto-map-curriculum')autoMapCurriculum();
+    else if(action==='export-curriculum')exportCurriculum();
+    else if(action==='choose-results')$('#resultsFile').click();
+    else if(action==='load-result-demo')loadResultDemo();
+    else if(action==='export-result-template')exportResultTemplate();
+    else if(action==='create-followup')createFollowup(Number(btn.dataset.question));
+    else if(action==='bank-save-approved')saveToBank(true);
+    else if(action==='bank-save-all')saveToBank(false);
+    else if(action==='bank-insert-selected')insertBankItems(Array.from(bankSelection));
+    else if(action==='bank-insert-one')insertBankItems([btn.dataset.id]);
+    else if(action==='bank-delete'){setBank(getBank().filter(function(b){return b.bankId!==btn.dataset.id;}));bankSelection.delete(btn.dataset.id);renderBank();}
+    else if(action==='bank-export')exportBank();
+    else if(action==='choose-bank-pack')$('#bankPackFile').click();
+    else if(action==='create-version')createVersion();
+    else if(action==='restore-version')restoreVersion(Number(btn.dataset.index));
+    else if(action==='add-comment')addComment();
+    else if(action==='delete-comment'){state.collaboration.comments.splice(Number(btn.dataset.index),1);queueSave();renderCollab();}
+    else if(action==='connect-room')connectRoom();
+    else if(action==='broadcast-project')broadcastProject();
+    else if(action==='accept-remote')acceptRemote();
+    else if(action==='test-document-modules')testDocumentModules();
+    else if(action==='test-gemini')testGemini();
+    else if(action==='gemini-generate')geminiGenerate();
+    else if(action==='clear-gemini-key')clearGeminiKey();
+    else if(action==='toggle-gemini-key')toggleGeminiKey(btn.dataset.target,btn);
+    else if(action==='sync-push')syncProject('push');
+    else if(action==='sync-pull')syncProject('pull');
+    else if(action==='copy-server-spec')copyServerSpec();
+    else if(action==='apply-preset')applyPreset(btn.dataset.preset);
+    else if(action==='approve-all')batchApprove();
+    else if(action==='shuffle-all')shuffleAll();
+    else if(action==='balance-answers')balanceAnswers();
+    else if(action==='normalize-times')normalizeTimes();
+    else if(action==='refresh-prompt'){renderStudio();toast('現在の設定で依頼文を更新しました。');}
+    else if(action==='copy-ai-prompt')copyAiPrompt();
+    else if(action==='load-ai-sample')loadAiSample();
+    else if(action==='import-ai-json')importAiJson();
+    else if(action==='preview-prev')previewMove(-1);
+    else if(action==='preview-next')previewMove(1);
+    else if(action==='preview-reveal')previewReveal();
+    else if(action==='preview-fullscreen')previewFullscreen();
+    else if(action==='clean-source')cleanSource();
+    else if(action==='clear-source')clearSource();
+    else if(action==='choose-file')$('#sourceFile').click();
+    else if(action==='choose-json')$('#jsonFile').click();
+    else if(action==='export-csv')exportCsv();
+    else if(action==='export-json')exportJson();
+    else if(action==='export-xlsx')exportXlsx();
+    else if(action==='copy-tsv')copyTsv();
+    else if(action==='print-quiz')printQuiz();
+    else if(action==='load-project')loadProject(btn.dataset.id);
+    else if(action==='delete-project')deleteProject(btn.dataset.id);
+    else if(action==='download-project'){var p=getProjects().find(function(x){return x.id===btn.dataset.id;});if(p)exportJson(p,fileSafe((p.meta&&p.meta.title)||'プロジェクト'));}
+    else if(action==='jump-question')jumpQuestion(btn.dataset.id);
+    else if(action==='close-modal')closeModal();
+    else if(action==='confirm-modal')confirmModal();
+  });
+
+  var zone=$('#uploadZone');
+  ['dragenter','dragover'].forEach(function(type){zone.addEventListener(type,function(e){e.preventDefault();zone.classList.add('drag');});});
+  ['dragleave','drop'].forEach(function(type){zone.addEventListener(type,function(e){e.preventDefault();zone.classList.remove('drag');});});
+  zone.addEventListener('drop',function(e){var file=e.dataTransfer&&e.dataTransfer.files&&e.dataTransfer.files[0];if(file)readTextFile(file);});
+  var documentDrop=$('#documentDrop');
+  ['dragenter','dragover'].forEach(function(type){documentDrop.addEventListener(type,function(e){e.preventDefault();documentDrop.classList.add('drag');});});
+  ['dragleave','drop'].forEach(function(type){documentDrop.addEventListener(type,function(e){e.preventDefault();documentDrop.classList.remove('drag');});});
+  documentDrop.addEventListener('drop',function(e){var file=e.dataTransfer&&e.dataTransfer.files&&e.dataTransfer.files[0];if(file)selectDocument(file);});
+  $('#confirmModal').addEventListener('click',function(e){if(e.target===this)closeModal();});
+  document.addEventListener('keydown',function(e){if(e.key==='Escape')closeModal();if((e.ctrlKey||e.metaKey)&&e.key.toLowerCase()==='s'){e.preventDefault();saveProject();}if($('#page-preview').classList.contains('active')&&!['INPUT','TEXTAREA','SELECT'].includes(document.activeElement.tagName)){if(e.key==='ArrowRight')previewMove(1);if(e.key==='ArrowLeft')previewMove(-1);if(e.code==='Space'){e.preventDefault();previewReveal();}}});
+  window.addEventListener('error',function(){toast('予期しない処理エラーが発生しました。直前の入力は自動保存されています。','error');});
+
+  syncFormFromState();restoreGeminiSession();renderAll();queueSave();
+})();
+</script>
+</body>
+</html>
