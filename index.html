@@ -491,7 +491,26 @@
             <div class="insight"><strong id="insightKeywords">0</strong><span>重要語候補</span></div>
           </div>
           <div class="notice notice-info mt-2"><span>ⓘ</span><span>教科書の写真・PDF・Word・PowerPoint・動画・URLから直接取り込みたい場合は「<a href="#" data-action="navigate" data-page="documents">資料の取り込み</a>」で解析し、結果をここへ送れます。</span></div>
-          <div class="right mt-2"><button class="btn btn-primary" data-action="generate">この資料から問題を生成</button></div>
+        </article>
+
+        <article class="card mt-2">
+          <div class="card-title"><h3><span class="step-chip">D</span>クイズ作成用に整理する（任意・推奨）</h3><span class="mode-tag connected" id="cleanStepTag">接続が必要</span></div>
+          <p class="help">写真やPDFから自動で抽出した文章には、ページ番号・見出しの飾り・OCRの読み間違い・関係のない繰り返しなどが混ざっていることがあります。そのまま問題を生成すると、意味の通らない問題になりやすいため、AIに「問題作成に必要な部分だけ」を抜き出して整理させることができます。</p>
+          <div class="inline-gate mt-1" id="gateClean"><p>🧹 この整理機能には接続モードが必要です。「モード・接続」からGemini APIキーを設定してください。</p><button class="btn btn-primary btn-small" data-action="navigate" data-page="deploy">接続モードを設定</button></div>
+          <div class="right mt-2"><button class="btn btn-primary" data-action="clean-with-ai">AIでクイズ向けに整理する</button></div>
+          <div class="field wide mt-2" id="cleanedTextWrap" style="display:none">
+            <label for="cleanedText">整理結果（編集できます・問題生成はこちらを優先して使用します）</label>
+            <textarea class="source-text" id="cleanedText" data-bind="meta.cleanedText" style="min-height:220px"></textarea>
+            <div class="source-insights">
+              <div class="insight"><strong id="cleanedChars">0</strong><span>整理後の文字数</span></div>
+              <div class="insight"><strong id="cleanedRatio">—</strong><span>元の本文からの削減率</span></div>
+            </div>
+            <div class="right mt-1"><button class="btn btn-paper btn-small" data-action="discard-cleaned">整理結果を破棄して元の本文を使う</button></div>
+          </div>
+        </article>
+
+        <article class="card mt-2">
+          <div class="right"><button class="btn btn-primary" data-action="generate">この資料から問題を生成</button></div>
         </article>
       </section>
 
@@ -870,6 +889,7 @@
     target.results=target.results||{records:[],source:''};target.results.records=Array.isArray(target.results.records)?target.results.records:[];
     target.collaboration=target.collaboration||{teacher:'',comments:[],versions:[]};target.collaboration.comments=Array.isArray(target.collaboration.comments)?target.collaboration.comments:[];target.collaboration.versions=Array.isArray(target.collaboration.versions)?target.collaboration.versions:[];
     target.settings=Object.assign({mode:'local',aiModel:'gemini-3.6-flash',syncUrl:'',syncProjectId:''},target.settings||{});delete target.settings.aiProxyUrl;
+    target.meta=target.meta||{};if(typeof target.meta.cleanedText!=='string')target.meta.cleanedText='';
     target.sources=Array.isArray(target.sources)?target.sources:[];
     target.sources.forEach(function(s){if(s.status==='processing'||s.status==='queued'){s.status='error';s.error='前回のセッションで処理が中断されました。もう一度ファイルを追加してください。';}if(typeof s.included!=='boolean')s.included=true;if(!s.engine)s.engine='gemini';});
     if(typeof target.sourcesManualOverride!=='boolean')target.sourcesManualOverride=false;
@@ -927,6 +947,7 @@
     $('#pageTitle').textContent=pageLabels[page][1];
     $('#sidebar').classList.remove('open');
     if(page==='documents')renderDocumentLab();
+    if(page==='source')renderCleanedTextUi();
     if(page==='questions')renderQuestions();
     if(page==='quality')runQuality(false);
     if(page==='curriculum')renderCurriculum();
@@ -968,7 +989,40 @@
     $('#insightChars').textContent=text.length.toLocaleString('ja-JP');
     $('#insightSentences').textContent=splitSentences(text).length;
     $('#insightKeywords').textContent=extractKeywords(text).length;
+    renderCleanedTextUi();
   }
+  function renderCleanedTextUi(){
+    var wrap=$('#cleanedTextWrap');if(!wrap)return;
+    var cleaned=(state.meta.cleanedText||'').trim();
+    wrap.style.display=cleaned?'block':'none';
+    if(cleaned){
+      $('#cleanedText').value=state.meta.cleanedText;
+      $('#cleanedChars').textContent=cleaned.length.toLocaleString('ja-JP');
+      var original=(state.meta.sourceText||'').length;
+      var ratio=original>0?Math.round((1-cleaned.length/original)*100):0;
+      $('#cleanedRatio').textContent=(original>0?ratio+'%':'—');
+    }
+    var connected=state.settings.mode==='connected';
+    var gate=$('#gateClean');if(gate)gate.classList.toggle('hidden',connected);
+    var tag=$('#cleanStepTag');if(tag){tag.classList.toggle('connected',!connected);tag.classList.toggle('ready',connected);tag.textContent=connected?'接続中':'接続が必要';}
+  }
+  function workingSourceText(){var cleaned=(state.meta.cleanedText||'').trim();return cleaned||state.meta.sourceText.trim();}
+  async function cleanSourceTextWithAI(){
+    var raw=state.meta.sourceText.trim();
+    if(raw.length<20){toast('資料本文を20文字以上入力してください。','warn');return;}
+    if(!requireConnected('gateClean',null,'AIによる整理は接続モードで利用できます。'))return;
+    var prompt='あなたは教員の教材づくりを支援するアシスタントです。次のテキストは、写真やPDFなどから自動で抽出したもので、OCRの読み間違い・ページ番号・見出しの飾り・目次・著作権表示・意味の通らない断片・無関係な繰り返しなどのノイズが混ざっている可能性があります。\n\nこの中から、四択クイズの問題作成に使える学習内容（用語とその定義、重要な事実、年号・数値、因果関係、手順など）だけを取り出し、1項目につき1つの事実・説明だけを含む短い文の箇条書きとして整理してください。\n\n条件：\n- 元のテキストにない情報を追加しない\n- ノイズ・無関係な情報は書き出さない\n- 説明や前置きを付けず、箇条書きの本文だけを返す\n\n【元のテキスト】\n'+raw;
+    try{
+      var cleaned=await geminiExtractText(prompt,'教材本文を整理中…');
+      state.meta.cleanedText=cleaned;
+      queueSave();
+      renderCleanedTextUi();
+      toast('教材本文をクイズ向けに整理しました。内容を確認してから「問題を生成」を押してください。');
+    }catch(err){
+      toast('整理に失敗しました：'+(err&&err.message?err.message:'不明なエラー'),'error');
+    }
+  }
+  function discardCleanedText(){state.meta.cleanedText='';queueSave();renderCleanedTextUi();toast('整理結果を破棄しました。元の教材本文を使用します。');}
 
   function cleanSentence(s){return String(s||'').replace(/^[-・●■◆◇□▶▷※\d\.、\)）\s]+/,'').replace(/[。！？!?]+$/,'').trim();}
   function shortText(text,max){var s=cleanSentence(text);return s.length>max?s.slice(0,max-1)+'…':s;}
@@ -1047,7 +1101,7 @@
   }
 
   function generateQuestions(){
-    var text=state.meta.sourceText.trim();
+    var text=workingSourceText();
     if(text.length<20){toast('資料本文を20文字以上入力してください。','warn');navigate('source');return;}
     state.generator.count=clamp(state.generator.count,1,30);
     var candidates=buildCandidates(text);
@@ -1059,6 +1113,69 @@
     if(state.questions.length){
       confirmAction('現在の問題を置き換えますか？','すでに'+state.questions.length+'問あります。「実行する」を押すと、新しく生成した問題に置き換わります。',function(){state.questions=selected;afterGenerate();});
     }else{state.questions=selected;afterGenerate();}
+  }
+  function parseAiQuestionsJson(raw){
+    raw=String(raw||'').trim();if(!raw)return null;
+    raw=raw.replace(/^```(?:json)?\s*/i,'').replace(/\s*```$/,'');
+    var data=safeParse(raw,null);
+    if(data&&Array.isArray(data.questions))data=data.questions;
+    if(!Array.isArray(data))return null;
+    var imported=[];
+    data.slice(0,50).forEach(function(item){
+      if(!item||typeof item.text!=='string'||!Array.isArray(item.options))return;
+      var opts=item.options.slice(0,4).map(function(x){return shortText(String(x),60);});
+      while(opts.length<4)opts.push('');
+      var correct=Number(item.correct);
+      if(correct>=1&&correct<=4&&item.correctOneBased===true)correct--;
+      if(!isFinite(correct)||correct<0||correct>=opts.length)correct=0;
+      imported.push({id:makeId('q'),text:shortText(item.text,95),options:opts,correct:[correct],time:allowedTimes.includes(Number(item.time))?Number(item.time):Number(state.generator.time)||20,difficulty:['基礎','標準','発展'].indexOf(item.difficulty)>=0?item.difficulty:state.generator.difficulty,objective:String(item.objective||'AI生成'),sourceExcerpt:shortText(item.sourceExcerpt||'',180),sourceLabel:state.meta.sourceTitle||'AI生成',approved:false,memo:'',standard:'',assessment:'確認',tags:[]});
+    });
+    return imported;
+  }
+  function generateQuestionsSmart(){
+    var text=workingSourceText();
+    if(text.length<20){toast('資料本文を20文字以上入力してください。','warn');navigate('source');return;}
+    state.generator.count=clamp(state.generator.count,1,30);
+    syncGeminiInputs();
+    if(state.settings.mode==='connected'&&sessionSecrets.geminiKey){
+      var proceed=function(){runGeminiGenerateInto();};
+      if(state.questions.length){confirmAction('現在の問題を置き換えますか？','すでに'+state.questions.length+'問あります。「実行する」を押すと、Geminiで新しく生成した問題に置き換わります。',proceed);}
+      else proceed();
+      return;
+    }
+    generateQuestions();
+  }
+  async function runGeminiGenerateInto(){
+    var model=state.settings.aiModel||'gemini-3.6-flash';
+    setGeminiBusy(true);
+    setGeminiStatus('','生成中…',model+'へ教材と依頼文を送信しています');
+    var schema={type:'array',items:{type:'object',properties:{text:{type:'string'},options:{type:'array',items:{type:'string'}},correct:{type:'integer'},difficulty:{type:'string'},objective:{type:'string'},sourceExcerpt:{type:'string'}},required:['text','options','correct','sourceExcerpt']}};
+    try{
+      var body={model:model,input:buildAiPrompt(),response_format:[{type:'text',mime_type:'application/json',schema:schema}]};
+      var res=await fetchWithTimeout('https://generativelanguage.googleapis.com/v1/interactions',{method:'POST',headers:geminiHeaders(),body:JSON.stringify(body)},120000);
+      var data=await res.json();
+      if(!res.ok)throw new Error(geminiErrorMessage(res.status,data));
+      var raw=extractInteractionText(data);
+      var imported=parseAiQuestionsJson(raw);
+      if(!imported||!imported.length){
+        $('#aiJson').value=raw;
+        setGeminiStatus('error','形式を要確認','回答をJSON配列として解釈できませんでした');
+        toast('Geminiの回答をJSON配列として解釈できませんでした。「AI Studio」ページで内容を確認してください。','error');
+        return;
+      }
+      if(imported.length>state.generator.count)imported=imported.slice(0,state.generator.count);
+      state.questions=imported;
+      lastQuality=null;queueSave();renderAll();navigate('questions');
+      setGeminiStatus('ok','生成完了',imported.length+'問を作成しました');
+      toast(imported.length+'問をGeminiで生成しました。内容と出典を必ず確認してください。');
+    }catch(err){
+      var msg=err.name==='AbortError'?'生成がタイムアウトしました。問題数や教材の長さを減らしてください。':(err&&err.message?err.message:'不明なエラーが発生しました。');
+      setGeminiStatus('error','生成できません',msg);
+      toast('Gemini生成に失敗しました：'+msg+' ローカルの簡易生成に切り替えます。','warn');
+      generateQuestions();
+    }finally{
+      setGeminiBusy(false);
+    }
   }
   function afterGenerate(){lastQuality=null;queueSave();renderQuestions();renderSummary();navigate('questions');toast(state.questions.length+'問の問題案を作成しました。必ず原資料と照合してください。');}
 
@@ -1315,14 +1432,15 @@
   }
 
   function buildAiPrompt(){
-    var source=state.meta.sourceText.trim();return 'あなたは日本の学校教員を支援するクイズ設計者です。以下の資料だけを根拠に、四択クイズを作成してください。\n\n【対象】'+state.meta.school+' '+state.meta.grade+'／'+state.meta.subject+'／'+(state.meta.unit||'単元未設定')+'\n【用途】'+state.meta.purpose+'\n【問題数】'+state.generator.count+'問\n【難易度】'+state.generator.difficulty+'\n\n【必須条件】\n- 問題文は95文字以内\n- 各選択肢は60文字以内\n- 選択肢は4個、正解は1個\n- 誤答は学習者が実際にしそうな誤解にする\n- 資料にない事実を追加しない\n- 曖昧な「最も適切」をできるだけ避ける\n- 出典となる原文をsourceExcerptに入れる\n- Markdownや説明文を付けず、JSON配列だけを返す\n\n【JSON形式】\n[{"text":"問題文","options":["選択肢1","選択肢2","選択肢3","選択肢4"],"correct":0,"difficulty":"基礎・標準・発展のいずれか","objective":"定義・説明など","sourceExcerpt":"根拠原文"}]\n\n【資料】\n'+(source||'（資料本文が未入力です）');
+    var source=workingSourceText();return 'あなたは日本の学校教員を支援するクイズ設計者です。以下の資料だけを根拠に、四択クイズを作成してください。\n\n【対象】'+state.meta.school+' '+state.meta.grade+'／'+state.meta.subject+'／'+(state.meta.unit||'単元未設定')+'\n【用途】'+state.meta.purpose+'\n【問題数】'+state.generator.count+'問\n【難易度】'+state.generator.difficulty+'\n\n【必須条件】\n- 問題文は95文字以内\n- 各選択肢は60文字以内\n- 選択肢は4個、正解は1個\n- 誤答は学習者が実際にしそうな誤解にする\n- 資料にない事実を追加しない\n- 曖昧な「最も適切」をできるだけ避ける\n- 出典となる原文をsourceExcerptに入れる\n- Markdownや説明文を付けず、JSON配列だけを返す\n\n【JSON形式】\n[{"text":"問題文","options":["選択肢1","選択肢2","選択肢3","選択肢4"],"correct":0,"difficulty":"基礎・標準・発展のいずれか","objective":"定義・説明など","sourceExcerpt":"根拠原文"}]\n\n【資料】\n'+(source||'（資料本文が未入力です）');
   }
   function renderStudio(){$('#aiPrompt').value=buildAiPrompt();}
   function copyAiPrompt(){renderStudio();var text=$('#aiPrompt').value;if(navigator.clipboard&&navigator.clipboard.writeText){navigator.clipboard.writeText(text).then(function(){toast('AIへの依頼文をコピーしました。');}).catch(function(){fallbackCopy(text);});}else fallbackCopy(text);}
   function loadAiSample(){$('#aiJson').value=JSON.stringify([{text:'光合成が行われる主な場所はどれですか？',options:['葉緑体','核','液胞','細胞壁'],correct:0,difficulty:'基礎',objective:'定義・説明',sourceExcerpt:'葉緑体は、植物の細胞の中にあり、光合成が行われる場所である。'}],null,2);toast('JSON形式の見本を入力しました。');}
   function importAiJson(){
-    var raw=$('#aiJson').value.trim();if(!raw){toast('AIのJSON回答を貼り付けてください。','warn');return;}raw=raw.replace(/^```(?:json)?\s*/i,'').replace(/\s*```$/,'');var data=safeParse(raw,null);if(data&&Array.isArray(data.questions))data=data.questions;if(!Array.isArray(data)){toast('JSON配列を読み取れませんでした。説明文や```を取り除いてください。','error');return;}
-    var imported=[];data.slice(0,50).forEach(function(item){if(!item||typeof item.text!=='string'||!Array.isArray(item.options))return;var opts=item.options.slice(0,4).map(function(x){return shortText(String(x),60);});while(opts.length<4)opts.push('');var correct=Number(item.correct);if(correct>=1&&correct<=4&&item.correctOneBased===true)correct--;if(!isFinite(correct)||correct<0||correct>=opts.length)correct=0;imported.push({id:makeId('q'),text:shortText(item.text,95),options:opts,correct:[correct],time:allowedTimes.includes(Number(item.time))?Number(item.time):Number(state.generator.time)||20,difficulty:['基礎','標準','発展'].indexOf(item.difficulty)>=0?item.difficulty:state.generator.difficulty,objective:String(item.objective||'AI生成'),sourceExcerpt:shortText(item.sourceExcerpt||'',180),sourceLabel:state.meta.sourceTitle||'AI Studio',approved:false,memo:'AI Studioから読込',standard:'',assessment:'確認',tags:[]});});
+    var raw=$('#aiJson').value.trim();if(!raw){toast('AIのJSON回答を貼り付けてください。','warn');return;}
+    var imported=parseAiQuestionsJson(raw);
+    if(!imported){toast('JSON配列を読み取れませんでした。説明文や```を取り除いてください。','error');return;}
     if(!imported.length){toast('有効な問題データがありませんでした。','error');return;}var mode=$('input[name="aiImportMode"]:checked').value;if(mode==='replace')state.questions=imported;else state.questions=state.questions.concat(imported);lastQuality=null;queueSave();renderAll();navigate('questions');toast(imported.length+'問を読み込みました。内容と出典を確認してください。');
   }
 
@@ -1628,7 +1746,7 @@
   function acceptRemote(){if(!pendingRemote)return;var keepSettings=clone(state.settings),keepCollab=clone(state.collaboration);state=clone(pendingRemote);ensureExtendedState(state);state.settings=keepSettings;state.collaboration=keepCollab;pendingRemote=null;$('#remoteNotice').classList.add('hidden');syncFormFromState();queueSave();renderAll();toast('共同編集版を受け入れました。');}
 
   function renderDeploy(){ensureExtendedState(state);var mode=state.settings.mode||'local';var radio=$('input[name="workspaceMode"][value="'+mode+'"]');if(radio)radio.checked=true;$$('[data-config]').forEach(function(el){el.value=state.settings[el.dataset.config]||'';});$$('[data-gemini-model]').forEach(function(el){if(Array.from(el.options).some(function(o){return o.value===state.settings.aiModel;}))el.value=state.settings.aiModel;});$('#moduleModeBadge').textContent=mode==='connected'?'CONNECTED':'LOCAL';$('#dashModeName').textContent=mode==='connected'?'接続モード':'完全ローカルモード';$('#dashModeText').textContent=mode==='connected'?'必要なときだけPDF・OCR・先生個人のGemini APIへ接続します。':'教材と問題データを外部送信せず、このブラウザ内で処理します。';$('#dashModeIcon').textContent=mode==='connected'?'⌁':'◉';}
-  function setWorkspaceMode(mode){state.settings.mode=mode==='connected'?'connected':'local';queueSave();renderDeploy();renderDocumentLab();if(mode==='connected')retryBlockedSources();toast(mode==='connected'?'接続モードへ切り替えました。外部通信は各機能を実行した時だけ行います。':'完全ローカルモードへ切り替えました。');}
+  function setWorkspaceMode(mode){state.settings.mode=mode==='connected'?'connected':'local';queueSave();renderDeploy();renderDocumentLab();renderCleanedTextUi();if(mode==='connected')retryBlockedSources();toast(mode==='connected'?'接続モードへ切り替えました。外部通信は各機能を実行した時だけ行います。':'完全ローカルモードへ切り替えました。');}
   async function testDocumentModules(){if(state.settings.mode!=='connected'){toast('先に接続モードへ切り替えてください。','warn');return;}try{$('#pdfModuleText').textContent='読込テスト中…';await import('https://cdn.jsdelivr.net/npm/pdfjs-dist@6.1.200/build/pdf.mjs');$('#pdfModuleText').textContent='PDF.js 読込OK';$('#ocrModuleText').textContent='読込テスト中…';await loadScriptOnce('https://cdn.jsdelivr.net/npm/tesseract.js@7.0.0/dist/tesseract.min.js','Tesseract');$('#ocrModuleText').textContent='Tesseract.js 読込OK';toast('PDF・OCRモジュールを読み込めました。');}catch(err){toast(err.message||'モジュールテストに失敗しました。','error');}}
   function geminiHeaders(){return {'Content-Type':'application/json','x-goog-api-key':sessionSecrets.geminiKey};}
   function setGeminiStatus(kind,title,detail){['#studioGeminiStatus','#deployGeminiStatus'].forEach(function(sel){var el=$(sel);if(!el)return;el.classList.remove('ok','error');if(kind)el.classList.add(kind);$('b',el).textContent=title;$('small',el).textContent=detail||'';});}
@@ -1650,7 +1768,7 @@
   function renderAll(){ensureExtendedState(state);renderSummary();renderQuestions();renderQuality();renderCurriculum();renderAnalytics();renderInsights();renderStudio();renderPreview();renderExport();renderProjects();renderBank();renderCollab();renderDeploy();renderDocumentLab();}
 
   document.addEventListener('input',function(e){
-    var bind=e.target.dataset.bind;if(bind){var value=e.target.type==='number'?Number(e.target.value):e.target.value;setPath(state,bind,value);if(bind==='meta.sourceText'){updateSourceInsights();if(state.sources&&state.sources.some(function(s){return s.status==='done';}))state.sourcesManualOverride=true;renderCombinedPreview();}lastQuality=null;queueSave();}
+    var bind=e.target.dataset.bind;if(bind){var value=e.target.type==='number'?Number(e.target.value):e.target.value;setPath(state,bind,value);if(bind==='meta.sourceText'){updateSourceInsights();if(state.sources&&state.sources.some(function(s){return s.status==='done';}))state.sourcesManualOverride=true;renderCombinedPreview();}if(bind==='meta.cleanedText'){var chars=$('#cleanedChars');if(chars)chars.textContent=value.trim().length.toLocaleString('ja-JP');var original=(state.meta.sourceText||'').length;var ratioEl=$('#cleanedRatio');if(ratioEl)ratioEl.textContent=original>0?Math.round((1-value.trim().length/original)*100)+'%':'—';}lastQuality=null;queueSave();}
     if(e.target.dataset.qAction)handleQuestionChange(e.target);
     if(e.target.id==='questionSearch')renderQuestions();
     if(e.target.id==='bankSearch')renderBank();
@@ -1690,7 +1808,9 @@
     else if(action==='new-project')newProject();
     else if(action==='save-project')saveProject();
     else if(action==='load-demo')loadDemo();
-    else if(action==='generate')generateQuestions();
+    else if(action==='generate')generateQuestionsSmart();
+    else if(action==='clean-with-ai')cleanSourceTextWithAI();
+    else if(action==='discard-cleaned')discardCleanedText();
     else if(action==='add-question'){addQuestion();navigate('questions');}
     else if(action==='run-quality')runQuality(true);
     else if(action==='choose-document')$('#documentFile').click();
