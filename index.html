@@ -7,7 +7,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Manrope:wght@500;600;700;800&family=Noto+Sans+JP:wght@400;500;600;700;800&display=swap" rel="stylesheet">
-  <title>QuizCraft EDU Pro 3.1｜Gemini個人API対応</title>
+  <title>QuizCraft EDU Pro 3.3｜Gemini個人API対応</title>
   <style>
     :root{
       --chalk:#173f3a;
@@ -538,7 +538,7 @@
               <li><b>表・グラフのページは分けて撮る</b>：文章のページと数値の多い表のページは別々の写真にすると、Geminiが数値を追いやすくなる</li>
             </ul>
           </article>
-          <div class="inline-gate mt-2" id="gatePhoto"><p>📷 写真の文字認識には接続モードが必要です。Gemini Visionを選ぶと、写真自体が先生個人のGemini APIへ送信され、より正確に読み取れます。送信したくない場合はローカルOCRを選んでください。</p><button class="btn btn-primary btn-small" data-action="navigate" data-page="deploy">接続モードを設定</button></div>
+          <div class="inline-gate mt-2" id="gatePhoto"><p>📷 Gemini Visionには接続モードが必要です。Gemini Visionを選ぶと、写真自体が先生個人のGemini APIへ送信され、より正確に読み取れます。送信したくない場合はローカルOCRを選んでください（ローカルOCRは接続なしで使えます）。</p><button class="btn btn-primary btn-small" data-action="navigate" data-page="deploy">接続モードを設定</button></div>
           <div class="field wide mt-2"><label for="ocrEnginePhoto">文字認識エンジン（次に追加する写真に適用）</label><select id="ocrEnginePhoto"><option value="gemini">Gemini Vision（推奨・高精度・写真をGoogleに送信）</option><option value="tesseract">ローカルOCR（送信なし・精度は低め、数字を間違えやすい）</option></select><div class="help">数字の精度をさらに重視する場合は「モード・接続」でPro系の高性能モデルを選ぶと改善することがあります（接続確認で利用可能なモデル一覧を取得できます）。</div></div>
           <div class="field wide"><label for="ocrLanguagePhoto">OCR言語（ローカルOCR選択時のみ使用）</label><select id="ocrLanguagePhoto"><option value="jpn+eng">日本語＋英語</option><option value="jpn">日本語</option><option value="eng">英語</option></select></div>
           <div class="document-drop mt-2" id="photoDrop">
@@ -561,7 +561,7 @@
                   <label><input type="radio" name="docMode" value="ocr"><span><b>画像OCR</b> <span class="mode-tag connected">接続が必要</span><small>スキャンPDF向け</small></span></label>
                 </div></div>
               </div>
-              <div class="inline-gate mt-2" id="gateFile"><p>🖼️ 画像ファイル・スキャンPDFの文字認識には接続モードが必要です。Gemini Visionを選ぶとページ画像がGoogleへ送信されます。送信したくない場合はローカルOCRを選んでください。</p><button class="btn btn-primary btn-small" data-action="navigate" data-page="deploy">接続モードを設定</button></div>
+              <div class="inline-gate mt-2" id="gateFile"><p>🖼️ Gemini Visionには接続モードが必要です。Gemini Visionを選ぶとページ画像がGoogleへ送信されます。送信したくない場合はローカルOCRを選んでください（ローカルOCRは接続なしで使えます）。</p><button class="btn btn-primary btn-small" data-action="navigate" data-page="deploy">接続モードを設定</button></div>
             </article>
             <article class="card">
               <div class="grid grid-3">
@@ -849,6 +849,7 @@
   var activeDocTab = 'photo';
   var bankSelection = new Set();
   var collabChannel = null;
+ var tabSessionId = makeId('tab');
   var pendingRemote = null;
   var sessionSecrets = {geminiKey:''};
   var allowedTimes = [5,10,20,30,60,120];
@@ -1088,8 +1089,9 @@
         }
       }
       if(state.generator.types.truefalse&&f.source.length<=82){
-        var tfOptions=['正しい','誤り'];
-        candidates.push(baseQuestion('次の記述は正しいですか？「'+shortText(f.source,67)+'」',tfOptions,[0],f.source,'正誤'));
+        var tfStatement=f.source,tfCorrect=0;
+        if(Math.random()<0.5){var falseStatement=makeFalseStatement(f.source,keywords);if(falseStatement){tfStatement=falseStatement;tfCorrect=1;}}
+        candidates.push(baseQuestion('次の記述は正しいですか？「'+shortText(tfStatement,67)+'」',['正しい','誤り'],[tfCorrect],f.source,'正誤'));
       }
     });
     var seen={};
@@ -1097,7 +1099,7 @@
   }
 
   function baseQuestion(text,options,correct,source,objective){
-    return {id:makeId('q'),text:shortText(text,95),options:options.slice(0,4),correct:correct,time:Number(state.generator.time)||20,difficulty:state.generator.difficulty,objective:objective||'',sourceExcerpt:shortText(source,180),sourceLabel:state.meta.sourceTitle||state.meta.sourceType||'入力資料',approved:false,memo:'',standard:'',assessment:'確認',tags:[]};
+    return {id:makeId('q'),text:shortText(text,95),options:options.slice(0,4),correct:correct,time:Number(state.generator.time)||20,difficulty:questionDifficulty(),objective:objective||'',sourceExcerpt:shortText(source,180),sourceLabel:state.meta.sourceTitle||state.meta.sourceType||'入力資料',approved:false,memo:'',standard:'',assessment:'確認',tags:[]};
   }
 
   function generateQuestions(){
@@ -1128,7 +1130,7 @@
       var correct=Number(item.correct);
       if(correct>=1&&correct<=4&&item.correctOneBased===true)correct--;
       if(!isFinite(correct)||correct<0||correct>=opts.length)correct=0;
-      imported.push({id:makeId('q'),text:shortText(item.text,95),options:opts,correct:[correct],time:allowedTimes.includes(Number(item.time))?Number(item.time):Number(state.generator.time)||20,difficulty:['基礎','標準','発展'].indexOf(item.difficulty)>=0?item.difficulty:state.generator.difficulty,objective:String(item.objective||'AI生成'),sourceExcerpt:shortText(item.sourceExcerpt||'',180),sourceLabel:state.meta.sourceTitle||'AI生成',approved:false,memo:'',standard:'',assessment:'確認',tags:[]});
+      imported.push({id:makeId('q'),text:shortText(item.text,95),options:opts,correct:[correct],time:allowedTimes.includes(Number(item.time))?Number(item.time):Number(state.generator.time)||20,difficulty:['基礎','標準','発展'].indexOf(item.difficulty)>=0?item.difficulty:questionDifficulty(),objective:String(item.objective||'AI生成'),sourceExcerpt:shortText(item.sourceExcerpt||'',180),sourceLabel:state.meta.sourceTitle||'AI生成',approved:false,memo:'',standard:'',assessment:'確認',tags:[]});
     });
     return imported;
   }
@@ -1151,8 +1153,8 @@
     setGeminiStatus('','生成中…',model+'へ教材と依頼文を送信しています');
     var schema={type:'array',items:{type:'object',properties:{text:{type:'string'},options:{type:'array',items:{type:'string'}},correct:{type:'integer'},difficulty:{type:'string'},objective:{type:'string'},sourceExcerpt:{type:'string'}},required:['text','options','correct','sourceExcerpt']}};
     try{
-      var body={model:model,input:buildAiPrompt(),response_format:[{type:'text',mime_type:'application/json',schema:schema}]};
-      var res=await fetchWithTimeout('https://generativelanguage.googleapis.com/v1/interactions',{method:'POST',headers:geminiHeaders(),body:JSON.stringify(body)},120000);
+      var body={model:model,input:buildAiPrompt(),response_format:{type:'text',mime_type:'application/json',schema:schema}};
+      var res=await fetchWithTimeout('https://generativelanguage.googleapis.com/v1beta/interactions',{method:'POST',headers:geminiHeaders(),body:JSON.stringify(body)},120000);
       var data=await res.json();
       if(!res.ok)throw new Error(geminiErrorMessage(res.status,data));
       var raw=extractInteractionText(data);
@@ -1180,7 +1182,7 @@
   function afterGenerate(){lastQuality=null;queueSave();renderQuestions();renderSummary();navigate('questions');toast(state.questions.length+'問の問題案を作成しました。必ず原資料と照合してください。');}
 
   function addQuestion(){
-    state.questions.push({id:makeId('q'),text:'',options:['','','',''],correct:[0],time:Number(state.generator.time)||20,difficulty:state.generator.difficulty,objective:'手動作成',sourceExcerpt:'',sourceLabel:state.meta.sourceTitle||'手動作成',approved:false,memo:''});
+    state.questions.push({id:makeId('q'),text:'',options:['','','',''],correct:[0],time:Number(state.generator.time)||20,difficulty:questionDifficulty(),objective:'手動作成',sourceExcerpt:'',sourceLabel:state.meta.sourceTitle||'手動作成',approved:false,memo:''});
     queueSave();renderQuestions();toast('空の問題を追加しました。');
   }
 
@@ -1224,10 +1226,10 @@
   function questionCardHtml(q,index,issues){
     var issueBadge=issues.length?'<span class="badge warn">要確認 '+issues.length+'</span>':'<span class="badge ok">形式OK</span>';
     var difficultyClass=q.difficulty==='基礎'?'easy':(q.difficulty==='発展'?'hard':'standard');
-    var optionHtml=q.options.map(function(opt,i){return '<div class="option-row"><div class="option-radio"><input type="radio" name="correct_'+esc(q.id)+'" data-q-action="correct" data-id="'+esc(q.id)+'" data-index="'+i+'" '+(q.correct.indexOf(i)>=0?'checked':'')+' aria-label="選択肢'+(i+1)+'を正解にする"></div><input type="text" maxlength="80" value="'+esc(opt)+'" data-q-action="option" data-id="'+esc(q.id)+'" data-index="'+i+'" placeholder="選択肢 '+(i+1)+'"></div>';}).join('');
+    var optionHtml=q.options.map(function(opt,i){return '<div class="option-row"><div class="option-radio"><input type="radio" name="correct_'+esc(q.id)+'" data-q-action="correct" data-id="'+esc(q.id)+'" data-index="'+i+'" '+(q.correct.indexOf(i)>=0?'checked':'')+' aria-label="選択肢'+(i+1)+'を正解にする"></div><input type="text" maxlength="60" value="'+esc(opt)+'" data-q-action="option" data-id="'+esc(q.id)+'" data-index="'+i+'" placeholder="選択肢 '+(i+1)+'"></div>';}).join('');
     return '<article class="question-card '+(q.approved?'approved':'')+'" data-question-id="'+esc(q.id)+'">'+
       '<div class="q-head"><div class="q-number"><span class="q-index">'+(index+1)+'</span><span>問題 '+(index+1)+'</span></div><div class="q-meta"><span class="badge '+difficultyClass+'">'+esc(q.difficulty)+'</span>'+issueBadge+'</div></div>'+
-      '<div class="q-body"><label>問題文 <span class="muted">（<span data-count-for="'+esc(q.id)+'">'+q.text.length+'</span>/95）</span></label><textarea class="q-text" maxlength="140" data-q-action="text" data-id="'+esc(q.id)+'" placeholder="問題文を入力">'+esc(q.text)+'</textarea>'+
+      '<div class="q-body"><label>問題文 <span class="muted">（<span data-count-for="'+esc(q.id)+'">'+q.text.length+'</span>/95）</span></label><textarea class="q-text" maxlength="95" data-q-action="text" data-id="'+esc(q.id)+'" placeholder="問題文を入力">'+esc(q.text)+'</textarea>'+
       '<div class="option-grid">'+optionHtml+'</div>'+
       '<div class="q-footer"><div class="q-settings"><select data-q-action="time" data-id="'+esc(q.id)+'" aria-label="制限時間">'+allowedTimes.map(function(t){return '<option value="'+t+'" '+(Number(q.time)===t?'selected':'')+'>'+t+'秒</option>';}).join('')+'</select><select data-q-action="difficulty" data-id="'+esc(q.id)+'" aria-label="難易度">'+['基礎','標準','発展'].map(function(d){return '<option '+(q.difficulty===d?'selected':'')+'>'+d+'</option>';}).join('')+'</select><input type="text" value="'+esc(q.objective)+'" data-q-action="objective" data-id="'+esc(q.id)+'" placeholder="学習目標"></div>'+
       '<div class="toolbar"><button class="btn btn-soft btn-small" data-q-action="approve" data-id="'+esc(q.id)+'">'+(q.approved?'✓ 承認済み':'承認する')+'</button><button class="btn btn-paper btn-small" data-q-action="move-up" data-id="'+esc(q.id)+'" aria-label="上へ移動">↑</button><button class="btn btn-paper btn-small" data-q-action="move-down" data-id="'+esc(q.id)+'" aria-label="下へ移動">↓</button><button class="btn btn-paper btn-small" data-q-action="distractors" data-id="'+esc(q.id)+'">誤答再生成</button><button class="btn btn-paper btn-small" data-q-action="duplicate" data-id="'+esc(q.id)+'">複製</button><button class="btn btn-danger btn-small" data-q-action="delete" data-id="'+esc(q.id)+'">削除</button></div></div>'+
@@ -1279,7 +1281,9 @@
       var counts=[0,0,0,0];state.questions.forEach(function(q){if(q.correct&&q.correct.length)counts[q.correct[0]]++;});
       var max=Math.max.apply(null,counts);if(state.questions.length>=4&&max/state.questions.length>.65)allIssues.push({question:'全体',id:null,level:'warning',title:'正解位置が偏っています',detail:'同じ位置が'+max+'問あります。選択肢の順番を調整してください。'});
     }
-    var errors=allIssues.filter(function(x){return x.level==='error';}).length;
+    var tfQuestions=state.questions.filter(function(q){return q.objective==='正誤';});
+if(tfQuestions.length>=3&&tfQuestions.every(function(q){return (q.correct||[])[0]===tfQuestions[0].correct[0];}))allIssues.push({question:'全体',id:null,level:'warning',title:'正誤問題の正解が一方向に偏っています',detail:'正誤問題'+tfQuestions.length+'問すべての正解が同じ側になっています。誤りの文も混ぜてください。'});
+var errors=allIssues.filter(function(x){return x.level==='error';}).length;
     var warnings=allIssues.filter(function(x){return x.level==='warning';}).length;
     var score=state.questions.length?Math.max(0,100-errors*12-warnings*4):0;
     var total=state.questions.length||1;
@@ -1327,14 +1331,14 @@
     list.innerHTML=projects.map(function(p){var count=Array.isArray(p.questions)?p.questions.length:0;return '<div class="project-item"><div><div class="project-title">'+esc((p.meta&&p.meta.title)||'名称未設定')+'</div><div class="project-meta">'+esc((p.meta&&p.meta.school)||'')+' '+esc((p.meta&&p.meta.grade)||'')+'・'+esc((p.meta&&p.meta.subject)||'')+' ／ '+count+'問 ／ '+esc(formatDate(p.updatedAt))+'</div></div><div class="project-actions"><button class="btn btn-soft btn-small" data-action="load-project" data-id="'+esc(p.id)+'">開く</button><button class="btn btn-paper btn-small" data-action="download-project" data-id="'+esc(p.id)+'">JSON</button><button class="btn btn-danger btn-small" data-action="delete-project" data-id="'+esc(p.id)+'">削除</button></div></div>';}).join('');
   }
 
-  function loadProject(id){var p=getProjects().find(function(x){return x.id===id;});if(!p)return;confirmAction('保存プロジェクトを開きますか？','現在の作業内容は自動保存されています。保存一覧の「'+((p.meta&&p.meta.title)||'名称未設定')+'」を開きます。',function(){state=clone(p);ensureExtendedState(state);lastQuality=null;syncFormFromState();queueSave();renderAll();navigate('dashboard');toast('プロジェクトを開きました。');});}
+  function loadProject(id){var p=getProjects().find(function(x){return x.id===id;});if(!p)return;confirmAction('保存プロジェクトを開きますか？','現在の作業内容は、開く前に保存一覧へ自動で退避します。保存一覧の「'+((p.meta&&p.meta.title)||'名称未設定')+'」を開きます。',function(){snapshotCurrentToProjects();state=clone(p);ensureExtendedState(state);lastQuality=null;syncFormFromState();queueSave();renderAll();navigate('dashboard');toast('プロジェクトを開きました。');});}
   function deleteProject(id){var list=getProjects();var p=list.find(function(x){return x.id===id;});confirmAction('保存データを削除しますか？',(p&&p.meta?p.meta.title:'このプロジェクト')+'を保存一覧から削除します。',function(){setProjects(list.filter(function(x){return x.id!==id;}));renderProjects();toast('保存データを削除しました。');});}
 
   function confirmAction(title,message,callback){$('#modalTitle').textContent=title;$('#modalMessage').textContent=message;modalCallback=callback;$('#confirmModal').classList.add('open');}
   function closeModal(){modalCallback=null;$('#confirmModal').classList.remove('open');}
   function confirmModal(){var cb=modalCallback;closeModal();if(typeof cb==='function')cb();}
 
-  function newProject(){confirmAction('新しいプロジェクトを始めますか？','現在の作業内容は自動保存されています。必要なら先にプロジェクト保存またはJSON出力をしてください。',function(){state=defaultState();lastQuality=null;syncFormFromState();queueSave();renderAll();navigate('source');toast('新しいプロジェクトを開始しました。');});}
+  function newProject(){confirmAction('新しいプロジェクトを始めますか？','現在の作業内容は、始める前に保存一覧へ自動で退避します。念のためJSON出力もおすすめします。',function(){snapshotCurrentToProjects();state=defaultState();lastQuality=null;syncFormFromState();queueSave();renderAll();navigate('source');toast('新しいプロジェクトを開始しました。');});}
 
   function loadDemo(){
     var demo='光合成とは、植物が光のエネルギーを使って二酸化炭素と水からデンプンなどの養分をつくるはたらきである。\n植物は、光合成を行うときに二酸化炭素を取り入れ、酸素を放出する。\n葉の表皮には気孔があり、気体の出入りに関係している。\n葉緑体は、植物の細胞の中にあり、光合成が行われる場所である。\n呼吸では、酸素を使って養分からエネルギーを取り出し、二酸化炭素を放出する。\n光合成は光が必要だが、呼吸は昼も夜も行われる。';
@@ -1352,7 +1356,7 @@
     return state.questions.map(function(q){var opts=q.options.slice(0,4);while(opts.length<4)opts.push('');return [shortText(q.text,95),shortText(opts[0],60),shortText(opts[1],60),shortText(opts[2],60),shortText(opts[3],60),allowedTimes.includes(Number(q.time))?Number(q.time):20,q.correct.map(function(i){return i+1;}).join(',')];});
   }
   var exportHeaders=['Question - max 95 characters','Answer 1 - max 60 characters','Answer 2 - max 60 characters','Answer 3 - max 60 characters','Answer 4 - max 60 characters','Time limit (sec) - 5, 10, 20, 30, 60, or 120 secs','Correct answer(s) - choose at least one'];
-  function ensureExportable(){if(!state.questions.length){toast('出力する問題がありません。','warn');return false;}runQuality(false);if(lastQuality.errors){toast('形式エラーが'+lastQuality.errors+'件あります。品質チェックを確認してください。','warn');}return true;}
+  function ensureExportable(){if(!state.questions.length){toast('出力する問題がありません。','warn');return false;}runQuality(false);if(lastQuality.errors){toast('形式エラーが'+lastQuality.errors+'件あるため、出力を見合わせました。品質チェックで修正してから出力してください。','error');navigate('quality');return false;}return true;}
   function csvCell(value){var s=String(value==null?'':value);return '"'+s.replace(/"/g,'""')+'"';}
   function downloadBlob(blob,name){var url=URL.createObjectURL(blob);var a=document.createElement('a');a.href=url;a.download=name;document.body.appendChild(a);a.click();a.remove();setTimeout(function(){URL.revokeObjectURL(url);},1000);}
   function exportCsv(){if(!ensureExportable())return;var rows=[exportHeaders].concat(rowsForExport());var csv='\ufeff'+rows.map(function(r){return r.map(csvCell).join(',');}).join('\r\n');downloadBlob(new Blob([csv],{type:'text/csv;charset=utf-8'}),fileSafe(state.meta.title)+'_kahoot.csv');toast('CSVを出力しました。');}
@@ -1492,9 +1496,9 @@
     var src=state.sources.find(function(s){return s.id===id;});if(!src)return;
     var fileKinds=['docx','pptx','pdf-text','pdf-ocr','image','text-generic','subtitle'];
     if(fileKinds.indexOf(src.kind)>=0&&!sourceFiles[src.id]){src.status='error';src.error='ページの再読み込み後は、ファイルの再選択が必要です。もう一度追加してください。';renderSources();queueSave();return;}
-    if(['image','pdf-ocr'].indexOf(src.kind)>=0){
+    if(['image','pdf-ocr'].indexOf(src.kind)>=0&&src.engine!=='tesseract'){
       if(state.settings.mode!=='connected'){src.status='blocked';src.error='接続モードが必要です。';renderSources();queueSave();return;}
-      if(src.engine!=='tesseract'){syncGeminiInputs();if(!sessionSecrets.geminiKey){src.status='blocked';src.error='Gemini APIキーが未設定です。「モード・接続」から登録してください（ローカルOCRに切り替えれば不要です）。';renderSources();queueSave();return;}}
+      syncGeminiInputs();if(!sessionSecrets.geminiKey){src.status='blocked';src.error='Gemini APIキーが未設定です。「モード・接続」から登録してください（ローカルOCRに切り替えれば不要です）。';renderSources();queueSave();return;}
     }
     if(['video-url','url'].indexOf(src.kind)>=0){syncGeminiInputs();if(state.settings.mode!=='connected'){src.status='blocked';src.error='接続モードが必要です。';renderSources();queueSave();return;}if(!sessionSecrets.geminiKey){src.status='blocked';src.error='Gemini APIキーが未設定です。「モード・接続」から登録してください。';renderSources();queueSave();return;}}
     src.status='processing';src.error='';renderSources();
@@ -1505,8 +1509,8 @@
       if(src.kind==='docx'){text=await parseDocx(sourceFiles[src.id]);method='DOCX（ローカル）';units=1;}
       else if(src.kind==='pptx'){prevRange=$('#docRange').value;$('#docRange').value=src.range||'';text=await parsePptx(sourceFiles[src.id]);method='PowerPoint（ローカル）';units=documentUnits;$('#docRange').value=prevRange;}
       else if(src.kind==='pdf-text'){prevRange=$('#docRange').value;$('#docRange').value=src.range||'';text=await parsePdf(sourceFiles[src.id],false);method='PDF.js（ローカル）';units=documentUnits;$('#docRange').value=prevRange;}
-      else if(src.kind==='pdf-ocr'){prevRange=$('#docRange').value;prevLang=$('#ocrLanguage').value;$('#docRange').value=src.range||'';$('#ocrLanguage').value=src.lang||'jpn+eng';text=await parsePdf(sourceFiles[src.id],true,src.engine||'gemini');method=(src.engine==='tesseract'?'PDF OCR ローカル（接続）':'PDF OCR Gemini Vision（接続）');units=documentUnits;$('#docRange').value=prevRange;$('#ocrLanguage').value=prevLang;}
-      else if(src.kind==='image'){var pic=await downscaleImageIfNeeded(sourceFiles[src.id],2200);text=src.engine==='tesseract'?await ocrRecognize(pic,src.lang||'jpn+eng'):await geminiOcrPicture(pic,src.name+'を読み取り中…');method=(src.engine==='tesseract'?'写真OCR ローカル（接続）':'写真OCR Gemini Vision（接続）');units=1;}
+      else if(src.kind==='pdf-ocr'){prevRange=$('#docRange').value;prevLang=$('#ocrLanguage').value;$('#docRange').value=src.range||'';$('#ocrLanguage').value=src.lang||'jpn+eng';text=await parsePdf(sourceFiles[src.id],true,src.engine||'gemini');method=(src.engine==='tesseract'?'PDF OCR ローカル（Tesseract）':'PDF OCR Gemini Vision（接続）')+(lastOcrFailedPages?'（'+lastOcrFailedPages+'ページはOCRに失敗しました）':'');units=documentUnits;$('#docRange').value=prevRange;$('#ocrLanguage').value=prevLang;}
+      else if(src.kind==='image'){var pic=await downscaleImageIfNeeded(sourceFiles[src.id],2200);text=src.engine==='tesseract'?await ocrRecognize(pic,src.lang||'jpn+eng'):await geminiOcrPicture(pic,src.name+'を読み取り中…');method=(src.engine==='tesseract'?'写真OCR ローカル（Tesseract）':'写真OCR Gemini Vision（接続）');units=1;}
       else if(src.kind==='text-generic'){text=await readFileText(sourceFiles[src.id]);method='テキストファイル（ローカル）';units=1;}
       else if(src.kind==='subtitle'){var raw=await readFileText(sourceFiles[src.id]);text=src.isTimed?parseSubtitleText(raw):raw;method='字幕・文字起こし（ローカル）';units=1;}
       else if(src.kind==='transcript'){text=src.pastedText||'';method='文字起こし貼り付け（ローカル）';units=1;}
@@ -1517,7 +1521,7 @@
       else{src.status='done';src.text=text;src.method=method;src.units=units;src.error='';}
     }catch(err){src.status='error';src.error=err&&err.message?err.message:'処理中にエラーが発生しました。';}
     renderSources();recombineSources();queueSave();
-    setProgress(src.status==='done'?100:0,src.status==='done'?(src.name+' 完了'):(src.name+'：'+src.error));
+    if(prevRange!==undefined)$('#docRange').value=prevRange;if(prevLang!==undefined)$('#ocrLanguage').value=prevLang;setProgress(src.status==='done'?100:0,src.status==='done'?(src.name+' 完了'):(src.name+'：'+src.error));
   }
   var editingSourceId = null;
   function renderSources(){
@@ -1616,16 +1620,138 @@
     enqueueSource(src.id);
     toast(file.name+'を追加しました。自動で解析を始めます。');
   }
-  function loadScriptOnce(url,globalName){return new Promise(function(resolve,reject){if(globalName&&window[globalName]){resolve(window[globalName]);return;}var existing=document.querySelector('script[data-module="'+url+'"]');if(existing){if(existing.dataset.loaded==='1'){resolve(globalName?window[globalName]:true);return;}existing.addEventListener('load',function(){resolve(globalName?window[globalName]:true);});existing.addEventListener('error',function(){reject(new Error('外部モジュールを読み込めませんでした。ネットワーク接続を確認してください。'));});return;}var script=document.createElement('script');script.src=url;script.async=true;script.dataset.module=url;script.onload=function(){script.dataset.loaded='1';resolve(globalName?window[globalName]:true);};script.onerror=function(){script.remove();reject(new Error('外部モジュールを読み込めませんでした。ネットワーク接続を確認してください（学校のフィルタリングでCDNが遮断されている場合があります）。'));};document.head.appendChild(script);});}
+ 
+/* ==== v3.3: 取込ヘルパー（未定義だった関数の実装） ==== */
+var lastOcrFailedPages = 0;
+function readFileText(file){
+if(file&&typeof file.text==='function')return file.text();
+return new Promise(function(resolve,reject){var r=new FileReader();r.onload=function(){resolve(String(r.result||''));};r.onerror=function(){reject(new Error('ファイルを読み込めませんでした。'));};r.readAsText(file,'UTF-8');});
+}
+function readFileBuffer(file){
+if(file&&typeof file.arrayBuffer==='function')return file.arrayBuffer();
+return new Promise(function(resolve,reject){var r=new FileReader();r.onload=function(){resolve(r.result);};r.onerror=function(){reject(new Error('ファイルを読み込めませんでした。'));};r.readAsArrayBuffer(file);});
+}
+function parseRange(text,total){
+total=Math.max(0,Number(total)||0);if(!total)return [];
+var all=[];for(var i=1;i<=total;i++)all.push(i);
+var str=String(text||'').trim();if(!str)return all;
+var seen={},out=[];
+str.split(/[,、\s]+/).forEach(function(token){
+if(!token)return;
+var m=token.match(/^(\d+)\s*[-〜~]\s*(\d+)$/);
+if(m){var a=Math.min(Number(m[1]),Number(m[2])),b=Math.max(Number(m[1]),Number(m[2]));for(var n=a;n<=b;n++){if(n>=1&&n<=total&&!seen[n]){seen[n]=true;out.push(n);}}}
+else if(/^\d+$/.test(token)){var v=Number(token);if(v>=1&&v<=total&&!seen[v]){seen[v]=true;out.push(v);}}
+});
+return out.sort(function(x,y){return x-y;});
+}
+async function unzipEntries(file){
+var buf=await readFileBuffer(file);var bytes=new Uint8Array(buf);var view=new DataView(buf);
+var eocd=-1;var floor=Math.max(0,bytes.length-66000);
+for(var i=bytes.length-22;i>=floor;i--){if(view.getUint32(i,true)===0x06054b50){eocd=i;break;}}
+if(eocd<0)throw new Error('ZIP形式として読み取れませんでした。ファイルが破損している可能性があります。');
+var total=view.getUint16(eocd+10,true);var offset=view.getUint32(eocd+16,true);var entries={};
+for(var n=0;n<total;n++){
+if(offset+46>bytes.length||view.getUint32(offset,true)!==0x02014b50)break;
+var method=view.getUint16(offset+10,true);var compSize=view.getUint32(offset+20,true);
+var nameLen=view.getUint16(offset+28,true),extraLen=view.getUint16(offset+30,true),commentLen=view.getUint16(offset+32,true);
+var localOffset=view.getUint32(offset+42,true);
+var name=new TextDecoder('utf-8').decode(bytes.slice(offset+46,offset+46+nameLen));
+var lNameLen=view.getUint16(localOffset+26,true),lExtraLen=view.getUint16(localOffset+28,true);
+var dataStart=localOffset+30+lNameLen+lExtraLen;
+entries[name]={method:method,data:bytes.slice(dataStart,dataStart+compSize)};
+offset+=46+nameLen+extraLen+commentLen;
+}
+return entries;
+}
+async function unzipEntryText(entries,name){
+var e=entries[name];if(!e)throw new Error('必要な内容（'+name+'）がファイル内に見つかりませんでした。');
+if(e.method===0)return new TextDecoder('utf-8').decode(e.data);
+if(e.method===8){
+if(typeof DecompressionStream==='undefined')throw new Error('このブラウザは圧縮ファイルの展開に対応していません。最新版のChrome／Edgeでお試しください。');
+var stream=new Blob([e.data]).stream().pipeThrough(new DecompressionStream('deflate-raw'));
+var out=await new Response(stream).arrayBuffer();
+return new TextDecoder('utf-8').decode(out);
+}
+throw new Error('対応していない圧縮形式のファイルです。');
+}
+function xmlParagraphTexts(xml,paraLocalName,textLocalName){
+var doc=new DOMParser().parseFromString(xml,'text/xml');
+if(doc.getElementsByTagName('parsererror').length)throw new Error('ファイルの内容（XML）を読み取れませんでした。');
+var paras=doc.getElementsByTagNameNS('*',paraLocalName),lines=[];
+for(var i=0;i<paras.length;i++){
+var runs=paras[i].getElementsByTagNameNS('*',textLocalName),line='';
+for(var j=0;j<runs.length;j++)line+=runs[j].textContent;
+if(line.trim())lines.push(line.trim());
+}
+return lines;
+}
+async function parseDocx(file){
+var entries=await unzipEntries(file);
+var xml=await unzipEntryText(entries,'word/document.xml');
+var lines=xmlParagraphTexts(xml,'p','t');
+if(!lines.length)throw new Error('Wordファイルから文章を抽出できませんでした。');
+return lines.join('\n');
+}
+async function parsePptx(file){
+var entries=await unzipEntries(file);
+var names=Object.keys(entries).filter(function(n){return /^ppt\/slides\/slide\d+\.xml$/.test(n);}).sort(function(a,b){return Number(a.match(/(\d+)\.xml$/)[1])-Number(b.match(/(\d+)\.xml$/)[1]);});
+if(!names.length)throw new Error('PowerPointファイルからスライドを読み取れませんでした。');
+var rangeEl=$('#docRange');var selected=parseRange(rangeEl?rangeEl.value:'',names.length);
+if(!selected.length)throw new Error('指定したスライド範囲が見つかりませんでした。「ページ／スライド範囲」を確認してください。');
+documentUnits=selected.length;var parts=[];
+for(var i=0;i<selected.length;i++){
+var num=selected[i];var xml=await unzipEntryText(entries,names[num-1]);
+var lines=xmlParagraphTexts(xml,'p','t');
+parts.push('\n'+lines.join('\n'));
+}
+return parts.join('\n\n');
+}
+function requireConnected(gateId,unused,message){
+syncGeminiInputs();
+if(state.settings.mode==='connected'&&sessionSecrets.geminiKey)return true;
+if(state.settings.mode==='connected'){
+toast('Gemini APIキーが未設定です。「モード・接続」から登録してください。','warn');navigate('deploy');return false;
+}
+toast(message||'この機能は接続モードで利用できます。','warn');
+if(gateId){var gate=document.getElementById(gateId);if(gate){gate.classList.remove('hidden');try{gate.scrollIntoView({behavior:'smooth',block:'center'});}catch(e){}}}
+return false;
+}
+function questionDifficulty(){
+var d=state.generator.difficulty;
+if(d==='混合')return ['基礎','標準','発展'][Math.floor(Math.random()*3)];
+return ['基礎','標準','発展'].indexOf(d)>=0?d:'標準';
+}
+function makeFalseStatement(source,pool){
+var s=String(source||'');
+var num=s.match(/(\d+(?:\.\d+)?)(％|%|個|人|本|枚|回|度|cm|mm|m|km|g|kg|秒|分|時間|年)/);
+if(num){var alts=nearNumbers(num[1],num[2]).filter(function(x){return x!==num[1]+num[2];});if(alts.length)return s.replace(num[0],alts[0]);}
+var keys=extractKeywords(s).filter(function(w){return w.length>=2&&w.length<=16;});
+for(var i=0;i<keys.length;i++){
+var alt=(pool||[]).filter(function(w){return w!==keys[i]&&w.length>=2&&s.indexOf(w)<0;})[0];
+if(alt)return s.replace(keys[i],alt);
+}
+return null;
+}
+function snapshotCurrentToProjects(){
+try{
+if(!state.questions.length&&!(state.meta&&state.meta.sourceText))return;
+var projects=getProjects();var snap=clone(state);snap.updatedAt=new Date().toISOString();snap.meta.title=snap.meta.title||'名称未設定のクイズ';
+var existing=projects.findIndex(function(p){return p.id===snap.id;});
+if(existing>=0)projects[existing]=snap;else projects.unshift(snap);
+setProjects(projects.slice(0,40));
+}catch(e){}
+}
+
+ function loadScriptOnce(url,globalName){return new Promise(function(resolve,reject){if(globalName&&window[globalName]){resolve(window[globalName]);return;}var existing=document.querySelector('script[data-module="'+url+'"]');if(existing){if(existing.dataset.loaded==='1'){resolve(globalName?window[globalName]:true);return;}existing.addEventListener('load',function(){resolve(globalName?window[globalName]:true);});existing.addEventListener('error',function(){reject(new Error('外部モジュールを読み込めませんでした。ネットワーク接続を確認してください。'));});return;}var script=document.createElement('script');script.src=url;script.async=true;script.dataset.module=url;script.onload=function(){script.dataset.loaded='1';resolve(globalName?window[globalName]:true);};script.onerror=function(){script.remove();reject(new Error('外部モジュールを読み込めませんでした。ネットワーク接続を確認してください（学校のフィルタリングでCDNが遮断されている場合があります）。'));};document.head.appendChild(script);});}
   async function loadPdfJs(){try{var pdfjs=await import('https://cdn.jsdelivr.net/npm/pdfjs-dist@6.1.200/build/pdf.mjs');pdfjs.GlobalWorkerOptions.workerSrc='https://cdn.jsdelivr.net/npm/pdfjs-dist@6.1.200/build/pdf.worker.mjs';return pdfjs;}catch(err){throw new Error('PDF解析ライブラリを読み込めませんでした。ネットワーク接続を確認してください（教材の内容は送信されません。初回のみライブラリ本体を取得します）。');}}
-  async function parsePdf(file,forceOcr,engine){setProgress(8,'PDF解析モジュールを読み込み中…');var pdfjs=await loadPdfJs();var data,pdf;try{data=new Uint8Array(await readFileBuffer(file));pdf=await pdfjs.getDocument({data:data}).promise;}catch(err){throw new Error('PDFを開けませんでした。パスワード保護や破損の可能性があります。');}
-    var selected=parseRange($('#docRange').value,pdf.numPages),parts=[];if(!selected.length)throw new Error('指定したページ範囲が見つかりませんでした。「ページ／スライド範囲」を確認してください。');documentUnits=selected.length;
+  async function parsePdf(file,forceOcr,engine){setProgress(8,'PDF解析モジュールを読み込み中…');var pdfjs=await loadPdfJs();var data,pdf;try{data=new Uint8Array(await readFileBuffer(file));pdf=await pdfjs.getDocument({data:data}).promise;}catch(err){throw new Error('PDFを開けませんでした。パスワード保護や破損の可能性があります。'+(err&&err.message?'（'+err.message+'）':''));}
+    var selected=parseRange($('#docRange').value,pdf.numPages),parts=[],extractedChars=0,ocrFailed=0;if(!selected.length)throw new Error('指定したページ範囲が見つかりませんでした。「ページ／スライド範囲」を確認してください。');documentUnits=selected.length;
     for(var i=0;i<selected.length;i++){var num=selected[i],page;try{page=await pdf.getPage(num);}catch(err){parts.push('【ページ '+num+'】\n（このページは読み取れませんでした）');continue;}
       setProgress(15+70*(i/Math.max(1,selected.length)),'PDF '+num+'ページ目を解析中…');
-      if(forceOcr){try{var viewport=page.getViewport({scale:2.4}),canvas=document.createElement('canvas');canvas.width=viewport.width;canvas.height=viewport.height;var ctx=canvas.getContext('2d');ctx.fillStyle='#fff';ctx.fillRect(0,0,canvas.width,canvas.height);await page.render({canvasContext:ctx,viewport:viewport}).promise;var pageText=engine==='tesseract'?await ocrRecognize(canvas,$('#ocrLanguage').value||'jpn+eng'):await geminiOcrPicture(canvas.toDataURL('image/png'),'PDF '+num+'ページ目をGeminiで読み取り中…');parts.push('【ページ '+num+'】\n'+pageText);}catch(err){parts.push('【ページ '+num+'】\n（OCRに失敗しました：'+(err&&err.message?err.message:'不明なエラー')+')');}}
-      else{var content=await page.getTextContent(),text=content.items.map(function(item){return item.str;}).join(' ');parts.push('【ページ '+num+'】\n'+text);}
+      if(forceOcr){try{var viewport=page.getViewport({scale:2.4}),canvas=document.createElement('canvas');canvas.width=viewport.width;canvas.height=viewport.height;var ctx=canvas.getContext('2d');ctx.fillStyle='#fff';ctx.fillRect(0,0,canvas.width,canvas.height);await page.render({canvasContext:ctx,viewport:viewport}).promise;var pageText=engine==='tesseract'?await ocrRecognize(canvas,$('#ocrLanguage').value||'jpn+eng'):await geminiOcrPicture(canvas.toDataURL('image/png'),'PDF '+num+'ページ目をGeminiで読み取り中…');parts.push('【ページ '+num+'】\n'+pageText);}catch(err){ocrFailed++;parts.push('【ページ '+num+'】\n');}}
+      else{var content=await page.getTextContent(),text=content.items.map(function(item){return item.str;}).join(' ');extractedChars+=text.replace(/\s/g,'').length;parts.push('【ページ '+num+'】\n'+text);}
     }
-    return parts.join('\n\n');}
+    lastOcrFailedPages=ocrFailed;if(!forceOcr&&extractedChars===0)throw new Error('PDFから文字情報を抽出できませんでした。スキャンされた画像PDFの可能性があります。「PDFの処理方法」でOCR（Gemini Vision／ローカルOCR）を選んで、追加し直してください。');return parts.join('\n\n');}
   async function ocrRecognize(source,lang){setProgress(12,'OCRエンジンを読み込み中…');await loadScriptOnce('https://cdn.jsdelivr.net/npm/tesseract.js@7.0.0/dist/tesseract.min.js','Tesseract');var result;try{result=await window.Tesseract.recognize(source,lang||'jpn+eng',{logger:function(m){if(m&&typeof m.progress==='number')setProgress(15+m.progress*75,'OCR：'+String(m.status||'認識中'));}});}catch(err){throw new Error('文字認識に失敗しました。写真の明るさ・解像度を確認して再度お試しください。');}return result&&result.data?result.data.text:'';}
   function downscaleImageIfNeeded(file,maxDim){
     return new Promise(function(resolve){
@@ -1657,7 +1783,7 @@
     var payload=await toImagePayload(source);
     var prompt='あなたは教科書・プリントの写真から文字を書き起こす専門のOCRアシスタントです。次の写真に写っている文章・図表・表内の文字を、一字一句そのまま書き起こしてください。\n\n手順：\n1. まず写真全体をよく観察し、文章のブロックと、表・グラフ・数式などの数値情報のブロックを区別する。\n2. 通常の文章はそのまま自然な段落として書き起こす。\n3. 数字・年号・単位・記号（％、℃、cm、gなど）が含まれる箇所は、1文字ずつ指でなぞるように再確認し、桁数や位取り（0の数、小数点の位置）を間違えないよう特に慎重に書き写す。似た形の数字（1と7、3と8、0とOなど）は前後の文脈から判断して確定する。\n4. 表がある場合は、行と列の対応関係が分かるようMarkdown表形式（| |区切り）で書き起こす。\n5. かすれ・影・手ブレなどで確信を持って読めない箇所は、無理に推測せず［判読不能］と記す。\n\n書き起こした本文だけを返し、説明・感想・前置きは書かないでください。';
     var res,data;
-    try{res=await fetchWithTimeout('https://generativelanguage.googleapis.com/v1/interactions',{method:'POST',headers:geminiHeaders(),body:JSON.stringify({model:model,input:[{type:'text',text:prompt},{type:'image',mime_type:payload.mime,data:payload.data}]})},120000);data=await res.json();}
+    try{res=await fetchWithTimeout('https://generativelanguage.googleapis.com/v1beta/interactions',{method:'POST',headers:geminiHeaders(),body:JSON.stringify({model:model,input:[{type:'text',text:prompt},{type:'image',mime_type:payload.mime,data:payload.data}]})},120000);data=await res.json();}
     catch(err){throw new Error(err.name==='AbortError'?'解析がタイムアウトしました。写真のサイズを小さくするか、回線状況を確認してください。':'Geminiへの接続に失敗しました。ネットワーク接続を確認してください。');}
     if(!res.ok)throw new Error(geminiErrorMessage(res.status,data));
     var text=extractInteractionText(data).trim();
@@ -1687,7 +1813,7 @@
     var model=state.settings.aiModel||'gemini-3.6-flash';
     setProgress(10,busyLabel||'Geminiへ送信中…');
     var res,data;
-    try{res=await fetchWithTimeout('https://generativelanguage.googleapis.com/v1/interactions',{method:'POST',headers:geminiHeaders(),body:JSON.stringify({model:model,input:promptText})},120000);data=await res.json();}
+    try{res=await fetchWithTimeout('https://generativelanguage.googleapis.com/v1beta/interactions',{method:'POST',headers:geminiHeaders(),body:JSON.stringify({model:model,input:promptText})},120000);data=await res.json();}
     catch(err){throw new Error(err.name==='AbortError'?'解析がタイムアウトしました。回線状況を確認し、再度お試しください。':'Geminiへの接続に失敗しました。ネットワーク接続を確認してください。');}
     if(!res.ok)throw new Error(geminiErrorMessage(res.status,data));
     var text=extractInteractionText(data).trim();
@@ -1739,15 +1865,15 @@
 
   function renderCollab(){ensureExtendedState(state);$('#teacherName').value=state.collaboration.teacher||'';$('#commentCountBadge').textContent=state.collaboration.comments.length+'件';$('#versionList').innerHTML=state.collaboration.versions.length?state.collaboration.versions.map(function(v,i){return '<div class="version-item"><div><b>'+esc(v.note||'スナップショット')+'</b><p>'+esc(v.author||'名称未設定')+' ／ '+v.count+'問</p><small>'+esc(formatDate(v.at))+'</small></div><button class="btn btn-paper btn-small" data-action="restore-version" data-index="'+i+'">復元</button></div>';}).join(''):'<div class="empty">保存したバージョンはありません。</div>';$('#commentList').innerHTML=state.collaboration.comments.length?state.collaboration.comments.map(function(c,i){return '<div class="comment-item"><b>'+esc(c.author||'匿名')+'</b><p>'+esc(c.text)+'</p><small>'+esc(formatDate(c.at))+'</small> <button class="btn btn-danger btn-small" data-action="delete-comment" data-index="'+i+'">削除</button></div>';}).join(''):'<div class="empty">コメントはありません。</div>';}
   function createVersion(){var note=$('#versionNote').value.trim()||'変更記録',author=$('#teacherName').value.trim()||'匿名';state.collaboration.teacher=author;state.collaboration.versions.unshift({at:new Date().toISOString(),author:author,note:note,count:state.questions.length,snapshot:{meta:clone(state.meta),generator:clone(state.generator),curriculum:clone(state.curriculum),questions:clone(state.questions)}});state.collaboration.versions=state.collaboration.versions.slice(0,12);$('#versionNote').value='';queueSave();renderCollab();toast('編集スナップショットを保存しました。');}
-  function restoreVersion(index){var v=state.collaboration.versions[index];if(!v||!v.snapshot)return;confirmAction('このバージョンを復元しますか？',formatDate(v.at)+'の「'+v.note+'」へ戻します。現在版は自動保存されています。',function(){state.meta=clone(v.snapshot.meta);state.generator=clone(v.snapshot.generator);state.curriculum=clone(v.snapshot.curriculum);state.questions=clone(v.snapshot.questions);ensureExtendedState(state);syncFormFromState();queueSave();renderAll();toast('バージョンを復元しました。');});}
+  function restoreVersion(index){var v=state.collaboration.versions[index];if(!v||!v.snapshot)return;confirmAction('このバージョンを復元しますか？',formatDate(v.at)+'の「'+v.note+'」へ戻します。現在版は自動保存されています。',function(){state.collaboration.versions.unshift({at:new Date().toISOString(),author:state.collaboration.teacher||'自動',note:'復元前の自動バックアップ',count:state.questions.length,snapshot:{meta:clone(state.meta),generator:clone(state.generator),curriculum:clone(state.curriculum),questions:clone(state.questions)}});state.collaboration.versions=state.collaboration.versions.slice(0,12);state.meta=clone(v.snapshot.meta);state.generator=clone(v.snapshot.generator);state.curriculum=clone(v.snapshot.curriculum);state.questions=clone(v.snapshot.questions);ensureExtendedState(state);syncFormFromState();queueSave();renderAll();toast('バージョンを復元しました。');});}
   function addComment(){var text=$('#commentText').value.trim();if(!text){toast('コメントを入力してください。','warn');return;}var author=$('#teacherName').value.trim()||state.collaboration.teacher||'匿名';state.collaboration.teacher=author;state.collaboration.comments.unshift({at:new Date().toISOString(),author:author,text:text});state.collaboration.comments=state.collaboration.comments.slice(0,80);$('#commentText').value='';queueSave();renderCollab();}
-  function connectRoom(){var room=$('#roomCode').value.trim();if(!room){toast('ルームコードを入力してください。','warn');return;}if(typeof BroadcastChannel==='undefined'){toast('このブラウザはローカル共同編集ルームに対応していません。','error');return;}if(collabChannel)collabChannel.close();collabChannel=new BroadcastChannel('quizcraft_edu_'+room);collabChannel.onmessage=function(event){var msg=event.data;if(!msg||msg.sender===state.id)return;if(msg.type==='project'){pendingRemote=msg.project;$('#remoteTitle').textContent=(msg.author||'別の編集者')+'さんから共同編集版';$('#remoteDetail').textContent=(pendingRemote.meta&&pendingRemote.meta.title||'名称未設定')+' ／ '+(pendingRemote.questions||[]).length+'問 ／ '+formatDate(msg.at);$('#remoteNotice').classList.remove('hidden');toast('共同編集版を受信しました。');}if(msg.type==='hello')toast((msg.author||'編集者')+'さんがルームに参加しました。');};$('#collabStatus').textContent='ROOM: '+room;$('#collabStatus').classList.add('online');collabChannel.postMessage({type:'hello',sender:state.id,author:$('#teacherName').value.trim()||'編集者'});toast('ローカル共同編集ルームへ接続しました。');}
-  function broadcastProject(){if(!collabChannel){toast('先にルームへ接続してください。','warn');return;}collabChannel.postMessage({type:'project',sender:state.id,author:$('#teacherName').value.trim()||'編集者',at:new Date().toISOString(),project:clone(state)});toast('現在版をルームへ送信しました。');}
+  function connectRoom(){var room=$('#roomCode').value.trim();if(!room){toast('ルームコードを入力してください。','warn');return;}if(typeof BroadcastChannel==='undefined'){toast('このブラウザはローカル共同編集ルームに対応していません。','error');return;}if(collabChannel)collabChannel.close();collabChannel=new BroadcastChannel('quizcraft_edu_'+room);collabChannel.onmessage=function(event){var msg=event.data;if(!msg||msg.sender===tabSessionId)return;if(msg.type==='project'){pendingRemote=msg.project;$('#remoteTitle').textContent=(msg.author||'別の編集者')+'さんから共同編集版';$('#remoteDetail').textContent=(pendingRemote.meta&&pendingRemote.meta.title||'名称未設定')+' ／ '+(pendingRemote.questions||[]).length+'問 ／ '+formatDate(msg.at);$('#remoteNotice').classList.remove('hidden');toast('共同編集版を受信しました。');}if(msg.type==='hello')toast((msg.author||'編集者')+'さんがルームに参加しました。');};$('#collabStatus').textContent='ROOM: '+room;$('#collabStatus').classList.add('online');collabChannel.postMessage({type:'hello',sender:tabSessionId,author:$('#teacherName').value.trim()||'編集者'});toast('ローカル共同編集ルームへ接続しました。');}
+  function broadcastProject(){if(!collabChannel){toast('先にルームへ接続してください。','warn');return;}collabChannel.postMessage({type:'project',sender:tabSessionId,author:$('#teacherName').value.trim()||'編集者',at:new Date().toISOString(),project:clone(state)});toast('現在版をルームへ送信しました。');}
   function acceptRemote(){if(!pendingRemote)return;var keepSettings=clone(state.settings),keepCollab=clone(state.collaboration);state=clone(pendingRemote);ensureExtendedState(state);state.settings=keepSettings;state.collaboration=keepCollab;pendingRemote=null;$('#remoteNotice').classList.add('hidden');syncFormFromState();queueSave();renderAll();toast('共同編集版を受け入れました。');}
 
   function renderDeploy(){ensureExtendedState(state);var mode=state.settings.mode||'local';var radio=$('input[name="workspaceMode"][value="'+mode+'"]');if(radio)radio.checked=true;$$('[data-config]').forEach(function(el){el.value=state.settings[el.dataset.config]||'';});$$('[data-gemini-model]').forEach(function(el){if(Array.from(el.options).some(function(o){return o.value===state.settings.aiModel;}))el.value=state.settings.aiModel;});$('#moduleModeBadge').textContent=mode==='connected'?'CONNECTED':'LOCAL';$('#dashModeName').textContent=mode==='connected'?'接続モード':'完全ローカルモード';$('#dashModeText').textContent=mode==='connected'?'必要なときだけPDF・OCR・先生個人のGemini APIへ接続します。':'教材と問題データを外部送信せず、このブラウザ内で処理します。';$('#dashModeIcon').textContent=mode==='connected'?'⌁':'◉';}
   function setWorkspaceMode(mode){state.settings.mode=mode==='connected'?'connected':'local';queueSave();renderDeploy();renderDocumentLab();renderCleanedTextUi();if(mode==='connected')retryBlockedSources();toast(mode==='connected'?'接続モードへ切り替えました。外部通信は各機能を実行した時だけ行います。':'完全ローカルモードへ切り替えました。');}
-  async function testDocumentModules(){if(state.settings.mode!=='connected'){toast('先に接続モードへ切り替えてください。','warn');return;}try{$('#pdfModuleText').textContent='読込テスト中…';await import('https://cdn.jsdelivr.net/npm/pdfjs-dist@6.1.200/build/pdf.mjs');$('#pdfModuleText').textContent='PDF.js 読込OK';$('#ocrModuleText').textContent='読込テスト中…';await loadScriptOnce('https://cdn.jsdelivr.net/npm/tesseract.js@7.0.0/dist/tesseract.min.js','Tesseract');$('#ocrModuleText').textContent='Tesseract.js 読込OK';toast('PDF・OCRモジュールを読み込めました。');}catch(err){toast(err.message||'モジュールテストに失敗しました。','error');}}
+  async function testDocumentModules(){try{$('#pdfModuleText').textContent='読込テスト中…';await import('https://cdn.jsdelivr.net/npm/pdfjs-dist@6.1.200/build/pdf.mjs');$('#pdfModuleText').textContent='PDF.js 読込OK';$('#ocrModuleText').textContent='読込テスト中…';await loadScriptOnce('https://cdn.jsdelivr.net/npm/tesseract.js@7.0.0/dist/tesseract.min.js','Tesseract');$('#ocrModuleText').textContent='Tesseract.js 読込OK';toast('PDF・OCRモジュールを読み込めました。');}catch(err){toast(err.message||'モジュールテストに失敗しました。','error');}}
   function geminiHeaders(){return {'Content-Type':'application/json','x-goog-api-key':sessionSecrets.geminiKey};}
   function setGeminiStatus(kind,title,detail){['#studioGeminiStatus','#deployGeminiStatus'].forEach(function(sel){var el=$(sel);if(!el)return;el.classList.remove('ok','error');if(kind)el.classList.add(kind);$('b',el).textContent=title;$('small',el).textContent=detail||'';});}
   function syncGeminiInputs(source){var value=source?source.value:sessionSecrets.geminiKey;sessionSecrets.geminiKey=String(value||'').trim();['#studioGeminiKey','#geminiApiKey'].forEach(function(sel){var el=$(sel);if(el&&el!==source)el.value=sessionSecrets.geminiKey;});var remember=($('#rememberGeminiSession')&&$('#rememberGeminiSession').checked)||($('#rememberGeminiDeploy')&&$('#rememberGeminiDeploy').checked);try{if(remember&&sessionSecrets.geminiKey)sessionStorage.setItem('quizcraft_gemini_key',sessionSecrets.geminiKey);else sessionStorage.removeItem('quizcraft_gemini_key');}catch(e){}if(!sessionSecrets.geminiKey)setGeminiStatus('','未接続','キーは保存されていません');}
@@ -1758,7 +1884,7 @@
   async function testGemini(){syncGeminiInputs();if(!sessionSecrets.geminiKey){toast('Google AI StudioのAPIキーを入力してください。','warn');return;}setGeminiStatus('','接続確認中…','利用可能なモデルを取得しています');try{var res=await fetchWithTimeout('https://generativelanguage.googleapis.com/v1beta/models?pageSize=100',{headers:{'x-goog-api-key':sessionSecrets.geminiKey}},30000),data=await res.json();if(!res.ok)throw new Error(geminiErrorMessage(res.status,data));var models=(data.models||[]).filter(function(m){return (m.supportedGenerationMethods||m.supportedActions||[]).indexOf('generateContent')>=0&&/^models\/gemini-/i.test(m.name||'')&&!/(image|tts|live|embedding|aqa)/i.test(m.name||'');}).sort(function(a,b){var af=/3\.7-flash$/.test(a.name)?0:/flash/i.test(a.name)?1:2,bf=/3\.7-flash$/.test(b.name)?0:/flash/i.test(b.name)?1:2;return af-bf||String(a.displayName).localeCompare(String(b.displayName),'ja');});if(!models.length)throw new Error('テキスト生成対応のGeminiモデルを取得できませんでした。');populateGeminiModels(models);state.settings.mode='connected';queueSave();renderDeploy();renderDocumentLab();retryBlockedSources();setGeminiStatus('ok','Gemini API 接続OK',models.length+'モデルを確認 ／ '+state.settings.aiModel);toast('Google Gemini APIへ接続できました。');}catch(err){var msg=err.name==='AbortError'?'接続がタイムアウトしました。':err.message;setGeminiStatus('error','接続できません',msg);toast('Gemini接続失敗：'+msg,'error');}}
   function extractInteractionText(data){if(data&&data.output_text)return String(data.output_text);var texts=[];(data&&data.steps||[]).forEach(function(step){if(step.type==='model_output')(step.content||[]).forEach(function(item){if(item.type==='text'&&item.text)texts.push(item.text);});});if(!texts.length){var detail=data&&data.error&&data.error.message?data.error.message:'Geminiから回答本文が返りませんでした。';throw new Error(detail);}return texts.join('').trim();}
   function setGeminiBusy(busy){var btn=$('#geminiGenerateButton');if(!btn)return;btn.classList.toggle('is-busy',busy);btn.disabled=busy;btn.textContent=busy?'Geminiが作成中…':'Geminiで問題生成';}
-  async function geminiGenerate(){syncGeminiInputs();if(!sessionSecrets.geminiKey){toast('Google AI StudioのAPIキーを入力してください。','warn');$('#studioGeminiKey').focus();return;}if(!state.meta.sourceText.trim()){toast('先に教材本文を入力してください。','warn');navigate('source');return;}var model=state.settings.aiModel||'gemini-3.6-flash';state.settings.mode='connected';queueSave();renderDeploy();setGeminiBusy(true);setGeminiStatus('','生成中…',model+'へ教材と依頼文を送信しています');var schema={type:'array',items:{type:'object',properties:{text:{type:'string'},options:{type:'array',items:{type:'string'}},correct:{type:'integer'},difficulty:{type:'string'},objective:{type:'string'},sourceExcerpt:{type:'string'}},required:['text','options','correct','sourceExcerpt']}};try{var body={model:model,input:buildAiPrompt(),response_format:[{type:'text',mime_type:'application/json',schema:schema}]},res=await fetchWithTimeout('https://generativelanguage.googleapis.com/v1/interactions',{method:'POST',headers:geminiHeaders(),body:JSON.stringify(body)},120000),data=await res.json();if(!res.ok)throw new Error(geminiErrorMessage(res.status,data));var text=extractInteractionText(data).replace(/^```(?:json)?\s*/i,'').replace(/\s*```$/,'').trim(),parsed=safeParse(text,null);if(parsed&&Array.isArray(parsed.questions))parsed=parsed.questions;if(Array.isArray(parsed)){$('#aiJson').value=JSON.stringify(parsed,null,2);setGeminiStatus('ok','生成完了',parsed.length+'問の候補を受信しました');toast(parsed.length+'問の候補を受信しました。確認後に読み込んでください。');}else{$('#aiJson').value=text;setGeminiStatus('error','形式を要確認','回答は受信しましたがJSON配列として確認できません');toast('回答を受信しましたが、JSON形式の確認が必要です。','warn');}}catch(err){var msg=err.name==='AbortError'?'生成がタイムアウトしました。問題数や教材の長さを減らしてください。':err.message;setGeminiStatus('error','生成できません',msg);toast('Gemini生成失敗：'+msg,'error');}finally{setGeminiBusy(false);}}
+  async function geminiGenerate(){syncGeminiInputs();if(!sessionSecrets.geminiKey){toast('Google AI StudioのAPIキーを入力してください。','warn');$('#studioGeminiKey').focus();return;}if(!state.meta.sourceText.trim()){toast('先に教材本文を入力してください。','warn');navigate('source');return;}var model=state.settings.aiModel||'gemini-3.6-flash';state.settings.mode='connected';queueSave();renderDeploy();setGeminiBusy(true);setGeminiStatus('','生成中…',model+'へ教材と依頼文を送信しています');var schema={type:'array',items:{type:'object',properties:{text:{type:'string'},options:{type:'array',items:{type:'string'}},correct:{type:'integer'},difficulty:{type:'string'},objective:{type:'string'},sourceExcerpt:{type:'string'}},required:['text','options','correct','sourceExcerpt']}};try{var body={model:model,input:buildAiPrompt(),response_format:{type:'text',mime_type:'application/json',schema:schema}},res=await fetchWithTimeout('https://generativelanguage.googleapis.com/v1beta/interactions',{method:'POST',headers:geminiHeaders(),body:JSON.stringify(body)},120000),data=await res.json();if(!res.ok)throw new Error(geminiErrorMessage(res.status,data));var text=extractInteractionText(data).replace(/^```(?:json)?\s*/i,'').replace(/\s*```$/,'').trim(),parsed=safeParse(text,null);if(parsed&&Array.isArray(parsed.questions))parsed=parsed.questions;if(Array.isArray(parsed)){$('#aiJson').value=JSON.stringify(parsed,null,2);setGeminiStatus('ok','生成完了',parsed.length+'問の候補を受信しました');toast(parsed.length+'問の候補を受信しました。確認後に読み込んでください。');}else{$('#aiJson').value=text;setGeminiStatus('error','形式を要確認','回答は受信しましたがJSON配列として確認できません');toast('回答を受信しましたが、JSON形式の確認が必要です。','warn');}}catch(err){var msg=err.name==='AbortError'?'生成がタイムアウトしました。問題数や教材の長さを減らしてください。':err.message;setGeminiStatus('error','生成できません',msg);toast('Gemini生成失敗：'+msg,'error');}finally{setGeminiBusy(false);}}
   function clearGeminiKey(){sessionSecrets.geminiKey='';['#studioGeminiKey','#geminiApiKey'].forEach(function(sel){var el=$(sel);if(el)el.value='';});['#rememberGeminiSession','#rememberGeminiDeploy'].forEach(function(sel){var el=$(sel);if(el)el.checked=false;});try{sessionStorage.removeItem('quizcraft_gemini_key');}catch(e){}setGeminiStatus('','未接続','APIキーを消去しました');toast('Gemini APIキーをこのページから消去しました。');}
   function toggleGeminiKey(targetId,button){var input=document.getElementById(targetId);if(!input)return;input.type=input.type==='password'?'text':'password';button.textContent=input.type==='password'?'表示':'隠す';}
   function restoreGeminiSession(){try{var key=sessionStorage.getItem('quizcraft_gemini_key')||'';if(key){sessionSecrets.geminiKey=key;$('#studioGeminiKey').value=key;$('#geminiApiKey').value=key;$('#rememberGeminiSession').checked=true;$('#rememberGeminiDeploy').checked=true;setGeminiStatus('','キー復元済み','接続確認を実行してください');}}catch(e){}}
